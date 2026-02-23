@@ -10,6 +10,7 @@ public class Poll {
     private String creatorIp;
     private Instant createdAt;
     private Map<String, Vote> votes;
+    private String pmCode;
 
     public Poll(String id, String name, String creatorIp) {
         this.id = id;
@@ -17,6 +18,7 @@ public class Poll {
         this.creatorIp = creatorIp;
         this.createdAt = Instant.now();
         this.votes = new ConcurrentHashMap<>();
+        this.pmCode = String.format("%02d", new java.util.Random().nextInt(100));
     }
 
     public String getId() {
@@ -41,5 +43,10 @@ public class Poll {
 
     public void addVote(String username, String voteValue, String ipAddress) {
         votes.put(username, new Vote(username, voteValue, ipAddress));
+    }
+
+    @com.fasterxml.jackson.annotation.JsonIgnore
+    public String getPmCode() {
+        return pmCode;
     }
 }

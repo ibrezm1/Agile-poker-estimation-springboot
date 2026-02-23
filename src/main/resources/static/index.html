@@ -169,21 +169,22 @@
             line-height: 1.4;
         }
 
-        /* Home Section Layout */
-        #home-section {
+        /* Main Layout */
+        .main-layout {
             display: flex;
             gap: 2rem;
             align-items: flex-start;
+            width: 100%;
         }
 
-        #home-left,
-        #home-right {
+        .left-column,
+        .right-column {
             flex: 1;
             width: 100%;
         }
 
         @media (max-width: 768px) {
-            #home-section {
+            .main-layout {
                 flex-direction: column;
             }
         }
@@ -413,42 +414,97 @@
             <p class="subtitle">Real-time collaborative estimation</p>
         </div>
 
-        <div id="home-section" class="hidden">
-            <div id="home-left">
-                <!-- CREATE POLL SECTION -->
-                <div id="create-section" class="card">
-                    <h2>Start a new session</h2>
-                    <div class="input-group">
-                        <label for="poll-name">Topic / Issue Name</label>
-                        <input type="text" id="poll-name" placeholder="e.g. Implement login feature" autocomplete="off">
-                    </div>
-                    <button id="create-btn" onclick="createPoll()" style="width: 100%;">Create Session</button>
-
-                    <div id="share-container" class="hidden" style="margin-top: 2rem;">
-                        <h3 style="font-size: 1.1rem; margin-bottom: 0;">Share Links</h3>
-                        <p style="color: var(--success); font-size: 0.85rem; margin-top: 0.5rem;">Session created
-                            successfully!</p>
-
-                        <div class="link-copy-group">
-                            <div class="link-title">PM Link (For You)</div>
-                            <div class="link-row">
-                                <div class="link-url" id="pm-link-text"></div>
-                                <button class="copy-btn" onclick="copyText('pm-link-text', this)">Copy</button>
-                            </div>
+        <div class="main-layout">
+            <div class="left-column">
+                <!-- HOME / CREATE SECTION -->
+                <div id="home-section" class="hidden">
+                    <div id="create-section" class="card">
+                        <h2>Start a new session</h2>
+                        <div class="input-group">
+                            <label for="poll-name">Topic / Issue Name</label>
+                            <input type="text" id="poll-name" placeholder="e.g. Implement login feature"
+                                autocomplete="off">
                         </div>
+                        <button id="create-btn" onclick="createPoll()" style="width: 100%;">Create Session</button>
 
-                        <div class="link-copy-group">
-                            <div class="link-title">Member Link (Share to Vote)</div>
-                            <div class="link-row">
-                                <div class="link-url" id="member-link-text"></div>
-                                <button class="copy-btn" onclick="copyText('member-link-text', this)">Copy</button>
+                        <div id="share-container" class="hidden" style="margin-top: 2rem;">
+                            <h3 style="font-size: 1.1rem; margin-bottom: 0;">Share Links</h3>
+                            <p style="color: var(--success); font-size: 0.85rem; margin-top: 0.5rem;">Session created
+                                successfully!</p>
+
+                            <div class="link-copy-group"
+                                style="background-color: var(--card); border-color: var(--accent); text-align: center;">
+                                <div class="link-title" style="color: var(--accent);">Your PM Passcode (Do Not Share)
+                                </div>
+                                <div id="pm-code-display"
+                                    style="font-size: 2rem; font-weight: 700; color: var(--text-main); font-family: monospace; letter-spacing: 4px; padding: 0.5rem 0;">
+                                </div>
+                            </div>
+
+                            <div class="link-copy-group">
+                                <div class="link-title">PM Link (For You)</div>
+                                <div class="link-row">
+                                    <div class="link-url" id="pm-link-text"></div>
+                                    <button class="copy-btn" onclick="copyText('pm-link-text', this)">Copy</button>
+                                </div>
+                            </div>
+
+                            <div class="link-copy-group">
+                                <div class="link-title">Member Link (Share to Vote)</div>
+                                <div class="link-row">
+                                    <div class="link-url" id="member-link-text"></div>
+                                    <button class="copy-btn" onclick="copyText('member-link-text', this)">Copy</button>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
+
+                <!-- VOTE SECTION -->
+                <div id="vote-section" class="hidden">
+                    <div class="card">
+                        <h2 id="poll-title-display">Joining Poll...</h2>
+                        <div id="creator-info" class="creator-badge"></div>
+
+                        <div id="pm-share-container" class="link-copy-group hidden"
+                            style="margin-bottom: 2rem; margin-top: 0;">
+                            <div class="link-title">Member Link (Share to Vote)</div>
+                            <div class="link-row">
+                                <div class="link-url" id="vote-member-link-text"></div>
+                                <button class="copy-btn" onclick="copyText('vote-member-link-text', this)">Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="input-group" style="margin-top: 1.5rem;">
+                            <label for="voter-name">Your Name</label>
+                            <input type="text" id="voter-name" placeholder="Enter your name to vote" autocomplete="off">
+                        </div>
+
+                        <label style="margin-top: 1rem; display: block;">Select your estimate</label>
+                        <div class="fibonacci-grid" id="fibo-cards">
+                            <!-- rendered via JS -->
+                        </div>
+                    </div>
+
+                    <div class="card results-container">
+                        <h2>Participants</h2>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>IP Address</th>
+                                    <th style="text-align: right;">Vote</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-body">
+                                <!-- rendered via JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
 
-            <div id="home-right">
+            <div class="right-column">
                 <!-- ACTIVE POLLS SECTION -->
                 <div id="active-sessions-section" class="card">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
@@ -463,308 +519,289 @@
             </div>
         </div>
 
-        <!-- VOTE SECTION -->
-        <div id="vote-section" class="hidden" style="max-width: 800px; margin: 0 auto;">
+        <script>
+            const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?'];
+            let currentPollId = null;
+            let selectedVote = null;
+            let pollInterval = null;
+            let userRole = 'member'; // 'pm' or 'member'
+            let myName = '';
 
-            <div class="card">
-                <h2 id="poll-title-display">Joining Poll...</h2>
-                <div id="creator-info" class="creator-badge"></div>
+            window.onload = async () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const id = urlParams.get('id');
+                const role = urlParams.get('role');
+                const code = urlParams.get('code');
 
-                <div id="pm-share-container" class="link-copy-group hidden" style="margin-bottom: 2rem; margin-top: 0;">
-                    <div class="link-title">Member Link (Share to Vote)</div>
-                    <div class="link-row">
-                        <div class="link-url" id="vote-member-link-text"></div>
-                        <button class="copy-btn" onclick="copyText('vote-member-link-text', this)">Copy</button>
-                    </div>
-                </div>
+                if (role === 'pm') {
+                    userRole = 'pm';
+                }
 
-                <div class="input-group" style="margin-top: 1.5rem;">
-                    <label for="voter-name">Your Name</label>
-                    <input type="text" id="voter-name" placeholder="Enter your name to vote" autocomplete="off">
-                </div>
+                if (id) {
+                    currentPollId = id;
 
-                <label style="margin-top: 1rem; display: block;">Select your estimate</label>
-                <div class="fibonacci-grid" id="fibo-cards">
-                    <!-- rendered via JS -->
-                </div>
-            </div>
+                    if (userRole === 'pm') {
+                        try {
+                            const valRes = await fetch(`/api/polls/${currentPollId}/validate-pm?code=${code || ''}`);
+                            const isValid = await valRes.json();
+                            if (!isValid) {
+                                alert("Invalid or missing PM passcode! Joining as a regular member instead.");
+                                userRole = 'member';
+                                window.location.href = '?id=' + currentPollId;
+                                return;
+                            }
+                        } catch (e) {
+                            console.error("Validation failed", e);
+                        }
+                    }
 
-            <div class="card results-container">
-                <h2>Participants</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>IP Address</th>
-                            <th style="text-align: right;">Vote</th>
-                        </tr>
-                    </thead>
-                    <tbody id="results-body">
-                        <!-- rendered via JS -->
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+                    document.getElementById('vote-section').classList.remove('hidden');
 
-    <script>
-        const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?'];
-        let currentPollId = null;
-        let selectedVote = null;
-        let pollInterval = null;
-        let userRole = 'member'; // 'pm' or 'member'
-        let myName = '';
+                    if (userRole === 'pm') {
+                        document.getElementById('poll-title-display').innerText += ' (PM View)';
 
-        window.onload = () => {
-            const urlParams = new URLSearchParams(window.location.search);
-            const id = urlParams.get('id');
-            const role = urlParams.get('role');
+                        const baseUrl = window.location.origin + window.location.pathname;
+                        const memberUrl = baseUrl + '?id=' + currentPollId;
+                        document.getElementById('pm-share-container').classList.remove('hidden');
+                        document.getElementById('vote-member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
 
-            if (role === 'pm') {
-                userRole = 'pm';
-            }
+                        document.getElementById('voter-info-section')?.classList.add('hidden');
+                        document.getElementById('voting-cards-section')?.classList.add('hidden');
+                        document.querySelector("label[for='voter-name']").parentElement.classList.add('hidden');
+                        document.getElementById('fibo-cards').previousElementSibling.classList.add('hidden');
+                        document.getElementById('fibo-cards').classList.add('hidden');
+                    } else {
+                        renderFiboCards();
+                    }
 
-            if (id) {
-                currentPollId = id;
-                document.getElementById('vote-section').classList.remove('hidden');
+                    // Initial fetch for baseline display
+                    fetchPollDetails();
 
-                if (userRole === 'pm') {
-                    document.getElementById('poll-title-display').innerText += ' (PM View)';
+                    // Connect SSE Stream
+                    const eventSource = new EventSource(`/api/polls/${currentPollId}/stream`);
+                    eventSource.onmessage = (event) => {
+                        const votesData = JSON.parse(event.data);
+                        renderResults(votesData);
+                    };
 
-                    const baseUrl = window.location.origin + window.location.pathname;
-                    const memberUrl = baseUrl + '?id=' + currentPollId;
-                    document.getElementById('pm-share-container').classList.remove('hidden');
-                    document.getElementById('vote-member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
-
-                    document.getElementById('voter-info-section')?.classList.add('hidden');
-                    document.getElementById('voting-cards-section')?.classList.add('hidden');
-                    document.querySelector("label[for='voter-name']").parentElement.classList.add('hidden');
-                    document.getElementById('fibo-cards').previousElementSibling.classList.add('hidden');
-                    document.getElementById('fibo-cards').classList.add('hidden');
+                    eventSource.onerror = () => {
+                        console.log("SSE Connection lost. Reconnecting implicitly handled by browser.");
+                    };
                 } else {
-                    renderFiboCards();
+                    document.getElementById('home-section').classList.remove('hidden');
                 }
 
-                // Initial fetch for baseline display
-                fetchPollDetails();
-
-                // Connect SSE Stream
-                const eventSource = new EventSource(`/api/polls/${currentPollId}/stream`);
-                eventSource.onmessage = (event) => {
-                    const votesData = JSON.parse(event.data);
-                    renderResults(votesData);
-                };
-
-                eventSource.onerror = () => {
-                    console.log("SSE Connection lost. Reconnecting implicitly handled by browser.");
-                };
-            } else {
-                document.getElementById('home-section').classList.remove('hidden');
+                // Always fetch active polls regardless of current view
                 fetchActivePolls();
-            }
-        };
+            };
 
-        async function fetchActivePolls() {
-            try {
-                const res = await fetch('/api/polls');
-                let polls = await res.json();
-                const container = document.getElementById('session-list');
+            async function fetchActivePolls() {
+                try {
+                    const res = await fetch('/api/polls');
+                    let polls = await res.json();
+                    const container = document.getElementById('session-list');
 
-                if (polls.length === 0) {
-                    container.innerHTML = '<div class="empty-state">No active sessions right now. Create one on the left!</div>';
-                    return;
-                }
+                    if (polls.length === 0) {
+                        container.innerHTML = '<div class="empty-state">No active sessions right now. Create one on the left!</div>';
+                        return;
+                    }
 
-                // Sort descending (newest first assuming sequential IDs roughly or natural map order, ideally we'd use createdAt but it might not be in the JSON payload, assuming list order from end)
-                // Assuming newer polls are appended to the end of the list:
-                polls.reverse();
+                    // Sort descending (newest first assuming sequential IDs roughly or natural map order, ideally we'd use createdAt but it might not be in the JSON payload, assuming list order from end)
+                    // Assuming newer polls are appended to the end of the list:
+                    polls.reverse();
 
-                container.innerHTML = '';
-                polls.forEach(p => {
-                    const div = document.createElement('div');
-                    div.className = 'session-item';
+                    container.innerHTML = '';
+                    polls.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'session-item';
 
-                    const info = document.createElement('div');
-                    info.innerHTML = `
+                        const info = document.createElement('div');
+                        info.innerHTML = `
                         <div class="session-title">${p.name}</div>
                         <div class="session-meta">Created by ${p.creatorIp}</div>
                     `;
 
-                    const actions = document.createElement('div');
-                    actions.className = 'session-actions';
+                        const actions = document.createElement('div');
+                        actions.className = 'session-actions';
 
-                    const joinMemberBtn = document.createElement('button');
-                    joinMemberBtn.innerText = 'Join';
-                    joinMemberBtn.onclick = () => window.location.href = '?id=' + p.id;
+                        const joinMemberBtn = document.createElement('button');
+                        joinMemberBtn.innerText = 'Join';
+                        joinMemberBtn.onclick = () => window.location.href = '?id=' + p.id;
 
-                    const joinPmBtn = document.createElement('button');
-                    joinPmBtn.className = 'outline-btn';
-                    joinPmBtn.innerText = 'Join as PM';
-                    joinPmBtn.onclick = () => window.location.href = '?id=' + p.id + '&role=pm';
+                        const joinPmBtn = document.createElement('button');
+                        joinPmBtn.className = 'outline-btn';
+                        joinPmBtn.innerText = 'Join as PM';
+                        joinPmBtn.onclick = () => {
+                            const pmCodePrompt = prompt("Enter 2-digit PM Code for " + p.name + ":");
+                            if (pmCodePrompt) {
+                                window.location.href = '?id=' + p.id + '&role=pm&code=' + pmCodePrompt;
+                            }
+                        };
 
-                    actions.appendChild(joinPmBtn);
-                    actions.appendChild(joinMemberBtn);
+                        actions.appendChild(joinPmBtn);
+                        actions.appendChild(joinMemberBtn);
 
-                    div.appendChild(info);
-                    div.appendChild(actions);
+                        div.appendChild(info);
+                        div.appendChild(actions);
+                        container.appendChild(div);
+                    });
+                } catch (e) {
+                    console.error('Failed to fetch polls', e);
+                }
+            }
+
+            async function createPoll() {
+                const nameInput = document.getElementById('poll-name').value.trim();
+                const btn = document.getElementById('create-btn');
+                if (!nameInput) return alert('Please enter a topic name!');
+
+                btn.disabled = true;
+                btn.innerText = 'Creating...';
+
+                try {
+                    const res = await fetch('/api/polls', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nameInput })
+                    });
+                    const data = await res.json();
+
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    const pmUrl = baseUrl + '?id=' + data.id + '&role=pm&code=' + data.pmCode;
+                    const memberUrl = baseUrl + '?id=' + data.id;
+
+                    document.getElementById('share-container').classList.remove('hidden');
+                    document.getElementById('pm-code-display').innerText = data.pmCode;
+                    document.getElementById('pm-link-text').innerHTML = `<a href="${pmUrl}" target="_blank">${pmUrl}</a>`;
+                    document.getElementById('member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
+
+                    btn.innerText = 'Created!';
+                    fetchActivePolls(); // Refresh the list on the right
+
+                } catch (e) {
+                    console.error(e);
+                    alert('Failed to create poll');
+                    btn.disabled = false;
+                    btn.innerText = 'Create Session';
+                }
+            }
+
+            function copyText(elementId, btnElement) {
+                const el = document.getElementById(elementId);
+                const text = el.querySelector('a') ? el.querySelector('a').href : el.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btnElement.innerText;
+                    const originalBg = btnElement.style.backgroundColor;
+                    const originalColor = btnElement.style.color;
+
+                    btnElement.innerText = 'Copied!';
+                    btnElement.style.backgroundColor = 'var(--success)';
+                    btnElement.style.color = '#fff';
+
+                    setTimeout(() => {
+                        btnElement.innerText = originalText;
+                        btnElement.style.backgroundColor = originalBg;
+                        btnElement.style.color = originalColor;
+                    }, 2000);
+                });
+            }
+
+            function renderFiboCards() {
+                const container = document.getElementById('fibo-cards');
+                FIBONACCI.forEach(val => {
+                    const div = document.createElement('div');
+                    div.className = 'vote-card';
+                    div.innerText = val;
+                    div.onclick = () => submitVote(val, div);
                     container.appendChild(div);
                 });
-            } catch (e) {
-                console.error('Failed to fetch polls', e);
             }
-        }
 
-        async function createPoll() {
-            const nameInput = document.getElementById('poll-name').value.trim();
-            const btn = document.getElementById('create-btn');
-            if (!nameInput) return alert('Please enter a topic name!');
+            async function submitVote(val, cardElement) {
+                myName = document.getElementById('voter-name').value.trim();
+                if (!myName) return alert('Please enter your name first!');
 
-            btn.disabled = true;
-            btn.innerText = 'Creating...';
+                document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+                cardElement.classList.add('selected');
+                selectedVote = val;
 
-            try {
-                const res = await fetch('/api/polls', {
+                await fetch(`/api/polls/${currentPollId}/vote`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: nameInput })
+                    body: JSON.stringify({ username: myName, vote: val })
                 });
-                const data = await res.json();
 
-                const baseUrl = window.location.origin + window.location.pathname;
-                const pmUrl = baseUrl + '?id=' + data.id + '&role=pm';
-                const memberUrl = baseUrl + '?id=' + data.id;
-
-                document.getElementById('share-container').classList.remove('hidden');
-                document.getElementById('pm-link-text').innerHTML = `<a href="${pmUrl}" target="_blank">${pmUrl}</a>`;
-                document.getElementById('member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
-
-                btn.innerText = 'Created!';
-                fetchActivePolls(); // Refresh the list on the right
-
-            } catch (e) {
-                console.error(e);
-                alert('Failed to create poll');
-                btn.disabled = false;
-                btn.innerText = 'Create Session';
+                // UI updates automatically via SSE stream
             }
-        }
 
-        function copyText(elementId, btnElement) {
-            const el = document.getElementById(elementId);
-            const text = el.querySelector('a') ? el.querySelector('a').href : el.innerText;
-            navigator.clipboard.writeText(text).then(() => {
-                const originalText = btnElement.innerText;
-                const originalBg = btnElement.style.backgroundColor;
-                const originalColor = btnElement.style.color;
+            async function fetchPollDetails() {
+                if (!currentPollId) return;
+                try {
+                    const res = await fetch(`/api/polls/${currentPollId}`);
+                    if (res.status === 404) {
+                        alert('Poll not found or expired.');
+                        window.location.href = window.location.pathname;
+                        return;
+                    }
+                    const data = await res.json();
 
-                btnElement.innerText = 'Copied!';
-                btnElement.style.backgroundColor = 'var(--success)';
-                btnElement.style.color = '#fff';
+                    let title = data.name;
+                    if (userRole === 'pm') title += ' (PM View)';
+                    document.getElementById('poll-title-display').innerText = title;
+                    document.getElementById('creator-info').innerText = 'Created by IP: ' + data.creatorIp;
 
-                setTimeout(() => {
-                    btnElement.innerText = originalText;
-                    btnElement.style.backgroundColor = originalBg;
-                    btnElement.style.color = originalColor;
-                }, 2000);
-            });
-        }
+                    renderResults(data.votes);
+                } catch (e) {
+                    console.error('Error fetching poll', e);
+                }
+            }
 
-        function renderFiboCards() {
-            const container = document.getElementById('fibo-cards');
-            FIBONACCI.forEach(val => {
-                const div = document.createElement('div');
-                div.className = 'vote-card';
-                div.innerText = val;
-                div.onclick = () => submitVote(val, div);
-                container.appendChild(div);
-            });
-        }
+            function renderResults(votesMap) {
+                const tbody = document.getElementById('results-body');
+                tbody.innerHTML = '';
 
-        async function submitVote(val, cardElement) {
-            myName = document.getElementById('voter-name').value.trim();
-            if (!myName) return alert('Please enter your name first!');
-
-            document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
-            cardElement.classList.add('selected');
-            selectedVote = val;
-
-            await fetch(`/api/polls/${currentPollId}/vote`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ username: myName, vote: val })
-            });
-
-            // UI updates automatically via SSE stream
-        }
-
-        async function fetchPollDetails() {
-            if (!currentPollId) return;
-            try {
-                const res = await fetch(`/api/polls/${currentPollId}`);
-                if (res.status === 404) {
-                    alert('Poll not found or expired.');
-                    window.location.href = window.location.pathname;
+                const voters = Object.keys(votesMap);
+                if (voters.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Waiting for votes...</td></tr>';
                     return;
                 }
-                const data = await res.json();
 
-                let title = data.name;
-                if (userRole === 'pm') title += ' (PM View)';
-                document.getElementById('poll-title-display').innerText = title;
-                document.getElementById('creator-info').innerText = 'Created by IP: ' + data.creatorIp;
+                voters.forEach(name => {
+                    const voteData = votesMap[name];
+                    const tr = document.createElement('tr');
 
-                renderResults(data.votes);
-            } catch (e) {
-                console.error('Error fetching poll', e);
-            }
-        }
+                    const tdName = document.createElement('td');
+                    tdName.style.fontWeight = '600';
+                    tdName.innerText = name;
 
-        function renderResults(votesMap) {
-            const tbody = document.getElementById('results-body');
-            tbody.innerHTML = '';
+                    const tdIp = document.createElement('td');
+                    tdIp.style.color = 'var(--text-muted)';
+                    tdIp.style.fontSize = '0.85rem';
+                    tdIp.style.fontFamily = 'monospace';
 
-            const voters = Object.keys(votesMap);
-            if (voters.length === 0) {
-                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Waiting for votes...</td></tr>';
-                return;
-            }
+                    const tdVote = document.createElement('td');
+                    tdVote.style.textAlign = 'right';
 
-            voters.forEach(name => {
-                const voteData = votesMap[name];
-                const tr = document.createElement('tr');
-
-                const tdName = document.createElement('td');
-                tdName.style.fontWeight = '600';
-                tdName.innerText = name;
-
-                const tdIp = document.createElement('td');
-                tdIp.style.color = 'var(--text-muted)';
-                tdIp.style.fontSize = '0.85rem';
-                tdIp.style.fontFamily = 'monospace';
-
-                const tdVote = document.createElement('td');
-                tdVote.style.textAlign = 'right';
-
-                if (userRole === 'pm') {
-                    tdIp.innerText = voteData.ipAddress;
-                    tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
-                } else {
-                    if (name === myName) {
+                    if (userRole === 'pm') {
                         tdIp.innerText = voteData.ipAddress;
                         tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
                     } else {
-                        tdIp.innerText = '***.***.***.***';
-                        tdVote.innerHTML = `<span class="vote-badge" style="background:var(--border);">?</span>`;
+                        if (name === myName) {
+                            tdIp.innerText = voteData.ipAddress;
+                            tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
+                        } else {
+                            tdIp.innerText = '***.***.***.***';
+                            tdVote.innerHTML = `<span class="vote-badge" style="background:var(--border);">?</span>`;
+                        }
                     }
-                }
 
-                tr.appendChild(tdName);
-                tr.appendChild(tdIp);
-                tr.appendChild(tdVote);
-                tbody.appendChild(tr);
-            });
-        }
-    </script>
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdIp);
+                    tr.appendChild(tdVote);
+                    tbody.appendChild(tr);
+                });
+            }
+        </script>
 </body>
 
 </html>

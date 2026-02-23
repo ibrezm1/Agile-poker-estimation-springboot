@@ -27,11 +27,18 @@ public class PollController {
     }
 
     @PostMapping
-    public Poll createPoll(@RequestBody CreatePollRequest request,
+    public ResponseEntity<java.util.Map<String, Object>> createPoll(@RequestBody CreatePollRequest request,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
         String name = request.name != null ? request.name : "Unnamed Poll";
         String ip = httpRequest.getRemoteAddr();
-        return pollService.createPoll(name, ip);
+        Poll poll = pollService.createPoll(name, ip);
+
+        java.util.Map<String, Object> response = new java.util.HashMap<>();
+        response.put("id", poll.getId());
+        response.put("name", poll.getName());
+        response.put("creatorIp", poll.getCreatorIp());
+        response.put("pmCode", poll.getPmCode());
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping
@@ -46,6 +53,15 @@ public class PollController {
             return ResponseEntity.notFound().build();
         }
         return ResponseEntity.ok(poll);
+    }
+
+    @GetMapping("/{id}/validate-pm")
+    public ResponseEntity<Boolean> validatePmCode(@PathVariable String id, @RequestParam String code) {
+        Poll poll = pollService.getPoll(id);
+        if (poll != null && poll.getPmCode() != null && poll.getPmCode().equals(code)) {
+            return ResponseEntity.ok(true);
+        }
+        return ResponseEntity.ok(false);
     }
 
     @GetMapping(value = "/{id}/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
