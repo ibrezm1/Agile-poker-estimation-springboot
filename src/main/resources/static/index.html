@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Agile Poker</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --surface: #1e293b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: #334155;
+            --card: #0f172a;
+            --success: #22c55e;
+            --accent: #8b5cf6;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            padding: 2rem;
+            box-sizing: border-box;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-weight: 700;
+            font-size: 2.5rem;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0 0 0.5rem 0;
+        }
+
+        p.subtitle {
+            color: var(--text-muted);
+            margin: 0;
+            font-size: 1.1rem;
+        }
+
+        .card {
+            background-color: var(--surface);
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+            border: 1px solid var(--border);
+            margin-bottom: 2rem;
+            animation: fadeIn 0.4s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            font-weight: 500;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        input {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-family: inherit;
+            outline: none;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+
+        input:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3);
+        }
+
+        button {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: var(--primary-hover);
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        .outline-btn {
+            background-color: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .outline-btn:hover {
+            background-color: rgba(59, 130, 246, 0.1);
+        }
+
+        .share-box {
+            background-color: rgba(59, 130, 246, 0.1);
+            border: 1px dashed var(--primary);
+            padding: 1rem;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-top: 1.5rem;
+            gap: 1rem;
+        }
+
+        .share-link {
+            word-break: break-all;
+            color: var(--primary);
+            font-family: monospace;
+            font-size: 0.95rem;
+            line-height: 1.4;
+        }
+
+        /* Home Section Layout */
+        #home-section {
+            display: flex;
+            gap: 2rem;
+            align-items: flex-start;
+        }
+
+        #home-left,
+        #home-right {
+            flex: 1;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            #home-section {
+                flex-direction: column;
+            }
+        }
+
+        /* Copy link boxes */
+        .link-copy-group {
+            background-color: var(--surface);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 1rem;
+        }
+
+        .link-title {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .link-row {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: var(--bg-color);
+            padding: 0.5rem;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+        }
+
+        .link-url {
+            flex: 1;
+            font-family: monospace;
+            font-size: 0.85rem;
+            color: var(--primary);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .link-url a {
+            color: var(--primary);
+            text-decoration: none;
+            transition: text-decoration 0.2s;
+        }
+
+        .link-url a:hover {
+            text-decoration: underline;
+        }
+
+        .copy-btn {
+            background: var(--border);
+            color: var(--text-main);
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        .copy-btn:hover {
+            background: var(--text-muted);
+        }
+
+        /* Active Sessions */
+        .session-list {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            margin-top: 1rem;
+            max-height: 400px;
+            overflow-y: auto;
+            padding-right: 0.5rem;
+        }
+
+        /* Custom scrollbar for session list */
+        .session-list::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .session-list::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .session-list::-webkit-scrollbar-thumb {
+            background-color: var(--border);
+            border-radius: 10px;
+        }
+
+        .session-item {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            padding: 1rem;
+            border-radius: 8px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .session-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+            border-color: var(--text-muted);
+        }
+
+        .session-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+            margin-bottom: 0.2rem;
+            word-break: break-word;
+        }
+
+        .session-meta {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+
+        .session-actions {
+            display: flex;
+            gap: 0.5rem;
+            width: 100%;
+        }
+
+        .session-actions button {
+            flex: 1;
+            padding: 0.5rem;
+            font-size: 0.85rem;
+        }
+
+        /* Voting Section */
+        .fibonacci-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(60px, 1fr));
+            gap: 1rem;
+            margin-top: 1.5rem;
+        }
+
+        .vote-card {
+            background-color: var(--card);
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            color: var(--text-main);
+        }
+
+        .vote-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+            color: var(--primary);
+        }
+
+        .vote-card.selected {
+            background-color: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        /* Results table */
+        .results-container {
+            margin-top: 2rem;
+        }
+
+        .creator-badge {
+            display: inline-block;
+            background-color: rgba(139, 92, 246, 0.2);
+            color: #c4b5fd;
+            padding: 0.25rem 0.75rem;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1.5rem;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th,
+        td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid var(--border);
+        }
+
+        th {
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+        }
+
+        .vote-badge {
+            background-color: var(--success);
+            color: white;
+            width: 32px;
+            height: 32px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: 700;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container" style="max-width: 1000px;">
+        <div class="header">
+            <h1>Agile Poker</h1>
+            <p class="subtitle">Real-time collaborative estimation</p>
+        </div>
+
+        <div id="home-section" class="hidden">
+            <div id="home-left">
+                <!-- CREATE POLL SECTION -->
+                <div id="create-section" class="card">
+                    <h2>Start a new session</h2>
+                    <div class="input-group">
+                        <label for="poll-name">Topic / Issue Name</label>
+                        <input type="text" id="poll-name" placeholder="e.g. Implement login feature" autocomplete="off">
+                    </div>
+                    <button id="create-btn" onclick="createPoll()" style="width: 100%;">Create Session</button>
+
+                    <div id="share-container" class="hidden" style="margin-top: 2rem;">
+                        <h3 style="font-size: 1.1rem; margin-bottom: 0;">Share Links</h3>
+                        <p style="color: var(--success); font-size: 0.85rem; margin-top: 0.5rem;">Session created
+                            successfully!</p>
+
+                        <div class="link-copy-group">
+                            <div class="link-title">PM Link (For You)</div>
+                            <div class="link-row">
+                                <div class="link-url" id="pm-link-text"></div>
+                                <button class="copy-btn" onclick="copyText('pm-link-text', this)">Copy</button>
+                            </div>
+                        </div>
+
+                        <div class="link-copy-group">
+                            <div class="link-title">Member Link (Share to Vote)</div>
+                            <div class="link-row">
+                                <div class="link-url" id="member-link-text"></div>
+                                <button class="copy-btn" onclick="copyText('member-link-text', this)">Copy</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="home-right">
+                <!-- ACTIVE POLLS SECTION -->
+                <div id="active-sessions-section" class="card">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <h2 style="margin: 0;">Active Sessions</h2>
+                        <button class="outline-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"
+                            onclick="fetchActivePolls()">Refresh</button>
+                    </div>
+                    <div id="session-list" class="session-list">
+                        <!-- rendered via JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- VOTE SECTION -->
+        <div id="vote-section" class="hidden" style="max-width: 800px; margin: 0 auto;">
+
+            <div class="card">
+                <h2 id="poll-title-display">Joining Poll...</h2>
+                <div id="creator-info" class="creator-badge"></div>
+
+                <div id="pm-share-container" class="link-copy-group hidden" style="margin-bottom: 2rem; margin-top: 0;">
+                    <div class="link-title">Member Link (Share to Vote)</div>
+                    <div class="link-row">
+                        <div class="link-url" id="vote-member-link-text"></div>
+                        <button class="copy-btn" onclick="copyText('vote-member-link-text', this)">Copy</button>
+                    </div>
+                </div>
+
+                <div class="input-group" style="margin-top: 1.5rem;">
+                    <label for="voter-name">Your Name</label>
+                    <input type="text" id="voter-name" placeholder="Enter your name to vote" autocomplete="off">
+                </div>
+
+                <label style="margin-top: 1rem; display: block;">Select your estimate</label>
+                <div class="fibonacci-grid" id="fibo-cards">
+                    <!-- rendered via JS -->
+                </div>
+            </div>
+
+            <div class="card results-container">
+                <h2>Participants</h2>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>IP Address</th>
+                            <th style="text-align: right;">Vote</th>
+                        </tr>
+                    </thead>
+                    <tbody id="results-body">
+                        <!-- rendered via JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?'];
+        let currentPollId = null;
+        let selectedVote = null;
+        let pollInterval = null;
+        let userRole = 'member'; // 'pm' or 'member'
+        let myName = '';
+
+        window.onload = () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const id = urlParams.get('id');
+            const role = urlParams.get('role');
+
+            if (role === 'pm') {
+                userRole = 'pm';
+            }
+
+            if (id) {
+                currentPollId = id;
+                document.getElementById('vote-section').classList.remove('hidden');
+
+                if (userRole === 'pm') {
+                    document.getElementById('poll-title-display').innerText += ' (PM View)';
+
+                    const baseUrl = window.location.origin + window.location.pathname;
+                    const memberUrl = baseUrl + '?id=' + currentPollId;
+                    document.getElementById('pm-share-container').classList.remove('hidden');
+                    document.getElementById('vote-member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
+
+                    document.getElementById('voter-info-section')?.classList.add('hidden');
+                    document.getElementById('voting-cards-section')?.classList.add('hidden');
+                    document.querySelector("label[for='voter-name']").parentElement.classList.add('hidden');
+                    document.getElementById('fibo-cards').previousElementSibling.classList.add('hidden');
+                    document.getElementById('fibo-cards').classList.add('hidden');
+                } else {
+                    renderFiboCards();
+                }
+
+                fetchPollDetails();
+                pollInterval = setInterval(fetchPollDetails, 2500);
+            } else {
+                document.getElementById('home-section').classList.remove('hidden');
+                fetchActivePolls();
+            }
+        };
+
+        async function fetchActivePolls() {
+            try {
+                const res = await fetch('/api/polls');
+                let polls = await res.json();
+                const container = document.getElementById('session-list');
+
+                if (polls.length === 0) {
+                    container.innerHTML = '<div class="empty-state">No active sessions right now. Create one on the left!</div>';
+                    return;
+                }
+
+                // Sort descending (newest first assuming sequential IDs roughly or natural map order, ideally we'd use createdAt but it might not be in the JSON payload, assuming list order from end)
+                // Assuming newer polls are appended to the end of the list:
+                polls.reverse();
+
+                container.innerHTML = '';
+                polls.forEach(p => {
+                    const div = document.createElement('div');
+                    div.className = 'session-item';
+
+                    const info = document.createElement('div');
+                    info.innerHTML = `
+                        <div class="session-title">${p.name}</div>
+                        <div class="session-meta">Created by ${p.creatorIp}</div>
+                    `;
+
+                    const actions = document.createElement('div');
+                    actions.className = 'session-actions';
+
+                    const joinMemberBtn = document.createElement('button');
+                    joinMemberBtn.innerText = 'Join';
+                    joinMemberBtn.onclick = () => window.location.href = '?id=' + p.id;
+
+                    const joinPmBtn = document.createElement('button');
+                    joinPmBtn.className = 'outline-btn';
+                    joinPmBtn.innerText = 'Join as PM';
+                    joinPmBtn.onclick = () => window.location.href = '?id=' + p.id + '&role=pm';
+
+                    actions.appendChild(joinPmBtn);
+                    actions.appendChild(joinMemberBtn);
+
+                    div.appendChild(info);
+                    div.appendChild(actions);
+                    container.appendChild(div);
+                });
+            } catch (e) {
+                console.error('Failed to fetch polls', e);
+            }
+        }
+
+        async function createPoll() {
+            const nameInput = document.getElementById('poll-name').value.trim();
+            const btn = document.getElementById('create-btn');
+            if (!nameInput) return alert('Please enter a topic name!');
+
+            btn.disabled = true;
+            btn.innerText = 'Creating...';
+
+            try {
+                const res = await fetch('/api/polls', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: nameInput })
+                });
+                const data = await res.json();
+
+                const baseUrl = window.location.origin + window.location.pathname;
+                const pmUrl = baseUrl + '?id=' + data.id + '&role=pm';
+                const memberUrl = baseUrl + '?id=' + data.id;
+
+                document.getElementById('share-container').classList.remove('hidden');
+                document.getElementById('pm-link-text').innerHTML = `<a href="${pmUrl}" target="_blank">${pmUrl}</a>`;
+                document.getElementById('member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
+
+                btn.innerText = 'Created!';
+                fetchActivePolls(); // Refresh the list on the right
+
+            } catch (e) {
+                console.error(e);
+                alert('Failed to create poll');
+                btn.disabled = false;
+                btn.innerText = 'Create Session';
+            }
+        }
+
+        function copyText(elementId, btnElement) {
+            const el = document.getElementById(elementId);
+            const text = el.querySelector('a') ? el.querySelector('a').href : el.innerText;
+            navigator.clipboard.writeText(text).then(() => {
+                const originalText = btnElement.innerText;
+                const originalBg = btnElement.style.backgroundColor;
+                const originalColor = btnElement.style.color;
+
+                btnElement.innerText = 'Copied!';
+                btnElement.style.backgroundColor = 'var(--success)';
+                btnElement.style.color = '#fff';
+
+                setTimeout(() => {
+                    btnElement.innerText = originalText;
+                    btnElement.style.backgroundColor = originalBg;
+                    btnElement.style.color = originalColor;
+                }, 2000);
+            });
+        }
+
+        function renderFiboCards() {
+            const container = document.getElementById('fibo-cards');
+            FIBONACCI.forEach(val => {
+                const div = document.createElement('div');
+                div.className = 'vote-card';
+                div.innerText = val;
+                div.onclick = () => submitVote(val, div);
+                container.appendChild(div);
+            });
+        }
+
+        async function submitVote(val, cardElement) {
+            myName = document.getElementById('voter-name').value.trim();
+            if (!myName) return alert('Please enter your name first!');
+
+            document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+            cardElement.classList.add('selected');
+            selectedVote = val;
+
+            await fetch(`/api/polls/${currentPollId}/vote`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: myName, vote: val })
+            });
+
+            fetchPollDetails();
+        }
+
+        async function fetchPollDetails() {
+            if (!currentPollId) return;
+            try {
+                const res = await fetch(`/api/polls/${currentPollId}`);
+                if (res.status === 404) {
+                    alert('Poll not found or expired.');
+                    window.location.href = window.location.pathname;
+                    return;
+                }
+                const data = await res.json();
+
+                let title = data.name;
+                if (userRole === 'pm') title += ' (PM View)';
+                document.getElementById('poll-title-display').innerText = title;
+                document.getElementById('creator-info').innerText = 'Created by IP: ' + data.creatorIp;
+
+                renderResults(data.votes);
+            } catch (e) {
+                console.error('Error fetching poll', e);
+            }
+        }
+
+        function renderResults(votesMap) {
+            const tbody = document.getElementById('results-body');
+            tbody.innerHTML = '';
+
+            const voters = Object.keys(votesMap);
+            if (voters.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Waiting for votes...</td></tr>';
+                return;
+            }
+
+            voters.forEach(name => {
+                const voteData = votesMap[name];
+                const tr = document.createElement('tr');
+
+                const tdName = document.createElement('td');
+                tdName.style.fontWeight = '600';
+                tdName.innerText = name;
+
+                const tdIp = document.createElement('td');
+                tdIp.style.color = 'var(--text-muted)';
+                tdIp.style.fontSize = '0.85rem';
+                tdIp.style.fontFamily = 'monospace';
+
+                const tdVote = document.createElement('td');
+                tdVote.style.textAlign = 'right';
+
+                if (userRole === 'pm') {
+                    tdIp.innerText = voteData.ipAddress;
+                    tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
+                } else {
+                    if (name === myName) {
+                        tdIp.innerText = voteData.ipAddress;
+                        tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
+                    } else {
+                        tdIp.innerText = '***.***.***.***';
+                        tdVote.innerHTML = `<span class="vote-badge" style="background:var(--border);">?</span>`;
+                    }
+                }
+
+                tr.appendChild(tdName);
+                tr.appendChild(tdIp);
+                tr.appendChild(tdVote);
+                tbody.appendChild(tr);
+            });
+        }
+    </script>
+</body>
+
+</html>
