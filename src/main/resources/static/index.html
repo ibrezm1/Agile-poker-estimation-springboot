@@ -545,8 +545,19 @@
                     renderFiboCards();
                 }
 
+                // Initial fetch for baseline display
                 fetchPollDetails();
-                pollInterval = setInterval(fetchPollDetails, 2500);
+
+                // Connect SSE Stream
+                const eventSource = new EventSource(`/api/polls/${currentPollId}/stream`);
+                eventSource.onmessage = (event) => {
+                    const votesData = JSON.parse(event.data);
+                    renderResults(votesData);
+                };
+
+                eventSource.onerror = () => {
+                    console.log("SSE Connection lost. Reconnecting implicitly handled by browser.");
+                };
             } else {
                 document.getElementById('home-section').classList.remove('hidden');
                 fetchActivePolls();
@@ -683,7 +694,7 @@
                 body: JSON.stringify({ username: myName, vote: val })
             });
 
-            fetchPollDetails();
+            // UI updates automatically via SSE stream
         }
 
         async function fetchPollDetails() {

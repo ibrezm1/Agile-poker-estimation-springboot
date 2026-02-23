@@ -48,6 +48,16 @@ public class PollController {
         return ResponseEntity.ok(poll);
     }
 
+    @GetMapping(value = "/{id}/stream", produces = org.springframework.http.MediaType.TEXT_EVENT_STREAM_VALUE)
+    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> streamPoll(
+            @PathVariable String id) {
+        Poll poll = pollService.getPoll(id);
+        if (poll == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(pollService.subscribe(id));
+    }
+
     @PostMapping("/{id}/vote")
     public ResponseEntity<Poll> vote(@PathVariable String id, @RequestBody VoteRequest request,
             jakarta.servlet.http.HttpServletRequest httpRequest) {
