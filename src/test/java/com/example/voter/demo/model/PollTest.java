@@ -16,7 +16,10 @@ class PollTest {
         assertNotNull(poll.getVotes());
         assertTrue(poll.getVotes().isEmpty());
         assertNotNull(poll.getPmCode());
-        assertEquals(2, poll.getPmCode().length()); // PM Code format "%02d"
+        assertEquals(3, poll.getPmCode().length()); // PM Code format "%03d"
+        assertFalse(poll.isRevealed());
+        poll.setRevealed(true);
+        assertTrue(poll.isRevealed());
     }
 
     @Test

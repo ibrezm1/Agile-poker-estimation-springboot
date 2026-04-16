@@ -93,4 +93,16 @@ class PollServiceTest {
         // The newly created poll is not older than 1 day, so it should still be there
         assertEquals(1, pollService.listPolls().size());
     }
+
+    @Test
+    void testBroadcastPollState() {
+        Poll poll = pollService.createPoll("Broadcast", "ip");
+        pollService.subscribe(poll.getId());
+        assertDoesNotThrow(() -> pollService.broadcastPollState(poll.getId()));
+    }
+
+    @Test
+    void testBroadcastPollStateNonExistent() {
+        assertDoesNotThrow(() -> pollService.broadcastPollState("nonexistent"));
+    }
 }

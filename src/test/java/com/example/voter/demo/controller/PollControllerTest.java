@@ -194,4 +194,31 @@ class PollControllerTest {
         mockMvc.perform(delete("/api/polls").param("hours", "2"))
                 .andExpect(status().isNoContent());
     }
+
+    @Test
+    void testRevealPollSuccess() throws Exception {
+        Poll poll = new Poll("1", "Poll", "ip");
+        String code = poll.getPmCode();
+        Mockito.when(pollService.getPoll("1")).thenReturn(poll);
+
+        mockMvc.perform(post("/api/polls/1/reveal").param("code", code))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void testRevealPollNotFound() throws Exception {
+        Mockito.when(pollService.getPoll("1")).thenReturn(null);
+
+        mockMvc.perform(post("/api/polls/1/reveal").param("code", "any"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void testRevealPollForbidden() throws Exception {
+        Poll poll = new Poll("1", "Poll", "ip");
+        Mockito.when(pollService.getPoll("1")).thenReturn(poll);
+
+        mockMvc.perform(post("/api/polls/1/reveal").param("code", "wrong_code"))
+                .andExpect(status().isForbidden());
+    }
 }
