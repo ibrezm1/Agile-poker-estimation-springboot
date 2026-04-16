@@ -73,11 +73,29 @@ public class PokerSessionService {
     @Scheduled(fixedRate = 3600000)
     public void cleanupOldSessions() {
         Instant oneDayAgo = Instant.now().minus(1, ChronoUnit.DAYS);
-        sessions.entrySet().removeIf(entry -> entry.getValue().getCreatedAt().isBefore(oneDayAgo));
+        sessions.entrySet().removeIf(entry -> {
+            boolean old = entry.getValue().getCreatedAt().isBefore(oneDayAgo);
+            if (old) {
+                List<SseEmitter> sessionEmitters = emitters.remove(entry.getKey());
+                if (sessionEmitters != null) {
+                    sessionEmitters.forEach(SseEmitter::complete);
+                }
+            }
+            return old;
+        });
     }
 
     public void deleteSessionsOlderThan(long hours) {
         Instant threshold = Instant.now().minus(hours, ChronoUnit.HOURS);
-        sessions.values().removeIf(session -> session.getCreatedAt().isBefore(threshold));
+        sessions.entrySet().removeIf(entry -> {
+            boolean old = entry.getValue().getCreatedAt().isBefore(threshold);
+            if (old) {
+                List<SseEmitter> sessionEmitters = emitters.remove(entry.getKey());
+                if (sessionEmitters != null) {
+                    sessionEmitters.forEach(SseEmitter::complete);
+                }
+            }
+            return old;
+        });
     }
 }
