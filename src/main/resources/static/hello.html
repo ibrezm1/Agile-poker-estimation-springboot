@@ -1,11 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hello World</title>
+    <title>Encoding Utilities</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            padding: 2rem;
+            max-width: 800px;
+            margin: auto;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            margin-bottom: 1rem;
+            padding: 0.5rem;
+            font-family: monospace;
+            box-sizing: border-box;
+        }
+
+        button {
+            padding: 0.5rem 1rem;
+            margin-right: 0.5rem;
+            margin-bottom: 1rem;
+            cursor: pointer;
+        }
+
+        input[type="file"] {
+            margin-right: 0.5rem;
+        }
+
+        .toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 0.5rem;
+        }
+
+        .toolbar label {
+            font-weight: bold;
+        }
+    </style>
 </head>
+
 <body>
-    <h1>Hello World!</h1>
+    <h1>Encoding Utilities</h1>
+
+    <div>
+        <div class="toolbar">
+            <label for="inputText">Input:</label>
+            <div>
+                <input type="file" id="fileUpload" accept="*/*" title="Upload a text file"
+                    onchange="handleFileUpload(event)">
+                <button onclick="copyToClipboard('inputText')" style="margin-bottom: 0;">Copy Input</button>
+            </div>
+        </div>
+        <textarea id="inputText" placeholder="Paste your text here or upload a file..."></textarea>
+    </div>
+
+    <div style="margin-top: 1rem; margin-bottom: 1rem;">
+        <button onclick="performOp('base64Enc')">Base64 Encode</button>
+        <button onclick="performOp('base64Dec')">Base64 Decode</button>
+        <button onclick="performOp('urlEnc')">URL Encode</button>
+        <button onclick="performOp('urlDec')">URL Decode</button>
+    </div>
+
+    <div>
+        <div class="toolbar">
+            <label for="outputText">Output:</label>
+            <div>
+                <button onclick="copyToClipboard('outputText')" style="margin-bottom: 0;">Copy Output</button>
+                <button onclick="downloadOutput()" style="margin-bottom: 0;">Download</button>
+            </div>
+        </div>
+        <textarea id="outputText" readonly placeholder="Result will appear here..."></textarea>
+    </div>
+
+    <script>
+        function performOp(operation) {
+            const input = document.getElementById('inputText').value;
+            let output = '';
+            try {
+                if (operation === 'base64Enc') {
+                    output = btoa(input);
+                } else if (operation === 'base64Dec') {
+                    output = atob(input);
+                } else if (operation === 'urlEnc') {
+                    output = encodeURIComponent(input);
+                } else if (operation === 'urlDec') {
+                    output = decodeURIComponent(input);
+                }
+            } catch (err) {
+                output = 'Error: ' + err.message;
+            }
+            document.getElementById('outputText').value = output;
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                document.getElementById('inputText').value = e.target.result;
+            };
+            reader.readAsText(file);
+        }
+
+        function copyToClipboard(elementId) {
+            const text = document.getElementById(elementId).value;
+            navigator.clipboard.writeText(text).then(() => {
+                // Flash success color briefly
+                const btn = event.currentTarget;
+                if (btn) {
+                    const originalText = btn.innerText;
+                    btn.innerText = "Copied!";
+                    setTimeout(() => btn.innerText = originalText, 1500);
+                }
+            }).catch(err => {
+                alert('Failed to copy: ' + err);
+            });
+        }
+
+        function downloadOutput() {
+            const text = document.getElementById('outputText').value;
+            if (!text) {
+                alert('No output to download!');
+                return;
+            }
+            const blob = new Blob([text], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+
+            const now = new Date();
+            const dateStr = now.getFullYear() + '-' +
+                String(now.getMonth() + 1).padStart(2, '0') + '-' +
+                String(now.getDate()).padStart(2, '0') + '_' +
+                String(now.getHours()).padStart(2, '0') + '-' +
+                String(now.getMinutes()).padStart(2, '0');
+
+            a.download = `encoded-output-${dateStr}.txt`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    </script>
 </body>
+
 </html>
