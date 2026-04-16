@@ -398,13 +398,14 @@
             color: var(--text-muted);
             font-style: italic;
         }
+
         .modal-overlay {
             position: fixed;
             top: 0;
             left: 0;
             width: 100vw;
             height: 100vh;
-            background: rgba(0,0,0,0.5);
+            background: rgba(0, 0, 0, 0.5);
             backdrop-filter: blur(4px);
             display: flex;
             align-items: center;
@@ -419,7 +420,106 @@
             max-width: 400px;
             width: 90%;
             border: 1px solid var(--border);
-            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        /* Topics History Panel */
+        .topics-panel {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .topic-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--card);
+            transition: border-color 0.2s;
+        }
+
+        .topic-row.active-topic {
+            border-color: var(--primary);
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .topic-row.revealed-topic {
+            opacity: 0.65;
+        }
+
+        .topic-name {
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .topic-status {
+            font-size: 0.75rem;
+            font-weight: 600;
+            padding: 0.2rem 0.6rem;
+            border-radius: 999px;
+        }
+
+        .topic-status.active {
+            background: rgba(59, 130, 246, 0.2);
+            color: #93c5fd;
+        }
+
+        .topic-status.revealed {
+            background: rgba(34, 197, 94, 0.2);
+            color: #86efac;
+        }
+
+        .topic-status.pending {
+            background: rgba(148, 163, 184, 0.15);
+            color: var(--text-muted);
+        }
+
+        /* Collapsible vote detail inside topic rows (PM only) */
+        .topic-votes-detail {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.28s ease, padding 0.2s ease;
+            padding: 0 0;
+        }
+
+        .topic-votes-detail.open {
+            max-height: 300px;
+            padding: 0.6rem 0 0 0;
+        }
+
+        .vote-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+        }
+
+        .vote-chip {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.3rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.78rem;
+            cursor: default;
+        }
+
+        .vote-chip .chip-val {
+            font-weight: 700;
+            background: var(--primary);
+            color: #fff;
+            border-radius: 4px;
+            padding: 0.1rem 0.35rem;
+            font-size: 0.72rem;
+        }
+
+        .vote-chip.hidden-vote .chip-val {
+            background: var(--border);
+            color: var(--text-muted);
         }
     </style>
 </head>
@@ -436,8 +536,12 @@
             <div class="right-column">
                 <!-- ACTIVE POLLS SECTION -->
                 <div id="active-sessions-section" class="card">
-                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;" onclick="toggleSessions()">
-                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">Active Sessions <span id="session-count-indicator" style="font-size: 0.7em; color: var(--accent);">(0)</span> <span id="session-toggle-icon" style="font-size: 0.6em; color: var(--text-muted);">▼</span></h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center; cursor: pointer;"
+                        onclick="toggleSessions()">
+                        <h2 style="margin: 0; display: flex; align-items: center; gap: 0.5rem;">Active Sessions <span
+                                id="session-count-indicator" style="font-size: 0.7em; color: var(--accent);">(0)</span>
+                            <span id="session-toggle-icon" style="font-size: 0.6em; color: var(--text-muted);">▼</span>
+                        </h2>
                         <button class="outline-btn" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;"
                             onclick="event.stopPropagation(); fetchActivePolls();">Refresh</button>
                     </div>
@@ -446,18 +550,17 @@
                     </div>
                 </div>
             </div>
-            
+
             <div class="left-column">
                 <!-- HOME / CREATE SECTION -->
                 <div id="home-section" class="hidden">
                     <div id="create-section" class="card">
-                        <h2>Start a new session</h2>
+                        <h2>Start a Planning Session</h2>
                         <div class="input-group">
-                            <label for="poll-name">Topic / Issue Name</label>
-                            <input type="text" id="poll-name" placeholder="e.g. Implement login feature"
-                                autocomplete="off">
+                            <label for="poll-name">Session Name (e.g. Sprint 22)</label>
+                            <input type="text" id="poll-name" placeholder="e.g. Q3 Planning" autocomplete="off">
                         </div>
-                        <button id="create-btn" onclick="createPoll()" style="width: 100%;">Create Session</button>
+                        <button id="create-btn" onclick="createSession()" style="width: 100%;">Create Session</button>
 
                         <div id="share-container" class="hidden" style="margin-top: 2rem;">
                             <h3 style="font-size: 1.1rem; margin-bottom: 0;">Share Links</h3>
@@ -494,35 +597,56 @@
 
                 <!-- VOTE SECTION -->
                 <div id="vote-section" class="hidden">
-                    <div class="card">
-                        <h2 id="poll-title-display">Joining Poll...</h2>
-                        <div id="creator-info" class="creator-badge"></div>
 
-                        <div id="pm-share-container" class="link-copy-group hidden"
-                            style="margin-bottom: 2rem; margin-top: 0;">
-                            <div class="link-title">Member Link (Share to Vote)</div>
-                            <div class="link-row">
-                                <div class="link-url" id="vote-member-link-text"></div>
-                                <button class="copy-btn" onclick="copyText('vote-member-link-text', this)">Copy</button>
-                            </div>
-                            <div style="margin-top: 1rem; display: flex; justify-content: center;">
-                                <button id="reveal-btn" onclick="revealVotes()" style="background-color: var(--accent); width: 100%;">Reveal Votes</button>
-                            </div>
+                    <!-- PM Controls (top, visible only to PM) -->
+                    <div id="pm-share-container" class="card hidden">
+                        <div class="link-title" style="margin-bottom:0.5rem;">&#x1F517; Member Link (Share to Join)
+                        </div>
+                        <div class="link-row">
+                            <div class="link-url" id="vote-member-link-text"></div>
+                            <button class="copy-btn" onclick="copyText('vote-member-link-text', this)">Copy</button>
                         </div>
 
-                        <div class="input-group" style="margin-top: 1.5rem;">
+                        <div style="margin-top:1.5rem; border-top:1px solid var(--border); padding-top:1.5rem;">
+                            <label style="display:block; margin-bottom:0.5rem;">&#x2795; Start Next Topic</label>
+                            <div style="display:flex; gap:0.5rem;">
+                                <input type="text" id="next-topic-name" placeholder="e.g. ENG-123 Payment Fix"
+                                    style="flex:1;">
+                                <button onclick="createNewTopic()"
+                                    style="background-color:var(--success);">Start</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Topics History Panel  -->
+                    <div class="card">
+                        <div
+                            style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+                            <h2 style="margin:0;" id="session-name-title">Session</h2>
+                            <span class="topic-status active" id="session-topic-count">0 topics</span>
+                        </div>
+                        <div class="topics-panel" id="topics-panel">
+                            <div class="empty-state">Connecting...</div>
+                        </div>
+                    </div>
+
+                    <!-- Voting Card -->
+                    <div class="card" id="voting-card">
+                        <h2 id="poll-title-display" style="margin-top:0;">Connecting...</h2>
+
+                        <div class="input-group" id="voter-name-group">
                             <label for="voter-name">Your Name</label>
                             <input type="text" id="voter-name" placeholder="Enter your name to vote" autocomplete="off">
                         </div>
 
-                        <label style="margin-top: 1rem; display: block;">Select your estimate</label>
+                        <label style="margin-top:1rem; display:block;">Select your estimate</label>
                         <div class="fibonacci-grid" id="fibo-cards">
                             <!-- rendered via JS -->
                         </div>
                     </div>
 
                     <div class="card results-container">
-                        <h2>Participants</h2>
+                        <h2 id="results-heading">Participants</h2>
                         <table>
                             <thead>
                                 <tr>
@@ -543,13 +667,17 @@
         </div>
 
         <script>
-            const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34', '55', '89', '?'];
-            let currentPollId = null;
+            // Keep only till 34
+            const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34'];
+            let currentSessionId = null;
+            let currentTopicId = null;   // PM's active topic
+            let selectedTopicId = null;  // topic user has selected to vote on
+            let pmAutoExpandId = null;   // topic to auto-expand in PM view
             let selectedVote = null;
-            let pollInterval = null;
-            let userRole = 'member'; // 'pm' or 'member'
+            let userRole = 'member';
             let myName = '';
             let pmCode = null;
+            let lastActiveTopicId = null;
 
             window.onload = async () => {
                 const urlParams = new URLSearchParams(window.location.search);
@@ -563,16 +691,16 @@
                 }
 
                 if (id) {
-                    currentPollId = id;
+                    currentSessionId = id;
 
                     if (userRole === 'pm') {
                         try {
-                            const valRes = await fetch(`/api/polls/${currentPollId}/validate-pm?code=${code || ''}`);
+                            const valRes = await fetch(`/api/sessions/${currentSessionId}/validate-pm?code=${code || ''}`);
                             const isValid = await valRes.json();
                             if (!isValid) {
                                 alert("Invalid or missing PM passcode! Joining as a regular member instead.");
                                 userRole = 'member';
-                                window.location.href = '/poker.html?id=' + currentPollId;
+                                window.location.href = '/poker.html?id=' + currentSessionId;
                                 return;
                             }
                         } catch (e) {
@@ -583,42 +711,197 @@
                     document.getElementById('vote-section').classList.remove('hidden');
 
                     if (userRole === 'pm') {
-                        document.getElementById('poll-title-display').innerText += ' (PM View)';
-
                         const baseUrl = window.location.origin + '/poker.html';
-                        const memberUrl = baseUrl + '?id=' + currentPollId;
+                        const memberUrl = baseUrl + '?id=' + currentSessionId;
                         document.getElementById('pm-share-container').classList.remove('hidden');
                         document.getElementById('vote-member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
 
-                        document.getElementById('voter-info-section')?.classList.add('hidden');
-                        document.getElementById('voting-cards-section')?.classList.add('hidden');
-                        document.querySelector("label[for='voter-name']").parentElement.classList.add('hidden');
-                        document.getElementById('fibo-cards').previousElementSibling.classList.add('hidden');
-                        document.getElementById('fibo-cards').classList.add('hidden');
+                        // Hide the entire voting card for PM
+                        document.getElementById('voting-card')?.classList.add('hidden');
                     } else {
                         renderFiboCards();
                     }
 
-                    // Initial fetch for baseline display
-                    fetchPollDetails();
+                    // Initial fetch
+                    fetchSessionDetails();
 
                     // Connect SSE Stream
-                    const eventSource = new EventSource(`/api/polls/${currentPollId}/stream`);
+                    const eventSource = new EventSource(`/api/sessions/${currentSessionId}/stream`);
                     eventSource.onmessage = (event) => {
-                        const pollData = JSON.parse(event.data);
-                        renderResults(pollData);
+                        const sessionData = JSON.parse(event.data);
+                        handleStreamUpdate(sessionData);
                     };
 
                     eventSource.onerror = () => {
-                        console.log("SSE Connection lost. Reconnecting implicitly handled by browser.");
+                        console.log("SSE Connection lost.");
                     };
                 } else {
                     document.getElementById('home-section').classList.remove('hidden');
                 }
 
-                // Always fetch active polls regardless of current view
-                fetchActivePolls();
+                fetchActiveSessions();
             };
+
+            function handleStreamUpdate(sessionData) {
+                currentTopicId = sessionData.activeTopicId;
+
+                // Auto-select the active topic if user has nothing selected, 
+                // or if a NEW active topic has been started.
+                if (!selectedTopicId) {
+                    selectedTopicId = currentTopicId;
+                } else if (lastActiveTopicId && lastActiveTopicId !== currentTopicId && currentTopicId) {
+                    selectedTopicId = currentTopicId;
+                }
+                lastActiveTopicId = currentTopicId;
+
+                // Clear card selection when selected topic changes
+                const selectedTopic = sessionData.topics
+                    ? sessionData.topics.find(t => t.id === selectedTopicId)
+                    : null;
+
+                // Update session name header
+                const sessionTitle = document.getElementById('session-name-title');
+                if (sessionTitle) sessionTitle.innerText = sessionData.name + (userRole === 'pm' ? ' (PM)' : '');
+
+                // Render topic history panel
+                renderTopicsPanel(sessionData.topics || [], selectedTopicId, currentTopicId);
+
+                // Update voting card title to selected topic
+                const title = selectedTopic ? selectedTopic.name : 'Waiting for topic...';
+                document.getElementById('poll-title-display').innerText = title;
+
+                // Update participants heading
+                const heading = document.getElementById('results-heading');
+                if (heading) {
+                    heading.innerText = selectedTopic
+                        ? `Participants — ${selectedTopic.name}`
+                        : 'Participants';
+                }
+
+                renderResults(selectedTopic);
+            }
+
+            function renderTopicsPanel(topics, selectedId, activeId) {
+                const panel = document.getElementById('topics-panel');
+                const countEl = document.getElementById('session-topic-count');
+                if (!panel) return;
+
+                if (countEl) countEl.innerText = `${topics.length} topic${topics.length !== 1 ? 's' : ''}`;
+
+                panel.innerHTML = '';
+                topics.forEach((t, idx) => {
+                    const isSelected = t.id === selectedId;
+                    const isActive = t.id === activeId;
+                    const votes = t.votes || {};
+                    const voteCount = Object.keys(votes).length;
+                    const isClosed = t.revealed;
+
+                    // ---- wrapper (entire card is the click target) ----
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = `border:1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; border-radius:8px; background:${isSelected ? 'rgba(59,130,246,0.08)' : 'var(--card)'}; overflow:hidden; transition:all 0.2s; cursor:pointer;`;
+
+                    // All topics clickable — handler on wrapper so the entire area responds
+                    if (userRole === 'pm') {
+                        wrapper.title = 'Click to view votes';
+                        wrapper.onclick = () => {
+                            selectedTopicId = t.id;
+                            pmAutoExpandId = t.id;
+                            fetchSessionDetails();
+                        };
+                    } else if (!isClosed) {
+                        wrapper.title = 'Click to vote on this topic';
+                        wrapper.onclick = () => selectTopicToVote(t.id, t.name);
+                    } else {
+                        wrapper.title = 'Click to view results';
+                        wrapper.onclick = () => {
+                            selectedTopicId = t.id;
+                            fetchSessionDetails();
+                        };
+                    }
+
+                    // ---- row header ----
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;';
+
+                    let statusLabel, statusClass;
+                    if (isClosed) { statusLabel = '🔒 Closed'; statusClass = 'revealed'; }
+                    else if (isActive) { statusLabel = '▶ Active'; statusClass = 'active'; }
+                    else { statusLabel = 'Open'; statusClass = 'pending'; }
+
+                    const activeBadge = isActive && !isClosed ? '<span style="font-size:0.7rem;color:var(--primary);margin-left:0.4rem;">(newest)</span>' : '';
+                    let selectedBadge = '';
+                    if (isSelected) {
+                        if (userRole === 'pm') {
+                            selectedBadge = '<span style="font-size:0.7rem;color:var(--accent);margin-left:0.4rem;">← viewing</span>';
+                        } else if (!isClosed) {
+                            selectedBadge = '<span style="font-size:0.7rem;color:var(--accent);margin-left:0.4rem;">← voting here</span>';
+                        } else {
+                            selectedBadge = '<span style="font-size:0.7rem;color:var(--text-muted);margin-left:0.4rem;">← viewing results</span>';
+                        }
+                    }
+
+                    // Right side: PM gets reveal btn only, members get status badge
+                    let rightHtml;
+                    if (userRole === 'pm') {
+                        const revealBtn = isClosed ? '' : `<button onclick="event.stopPropagation(); revealTopicById('${t.id}')" style="font-size:0.75rem;padding:0.25rem 0.6rem;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;">Reveal</button>`;
+                        rightHtml = `<div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="topic-status ${statusClass}">${statusLabel}</span>
+                            ${revealBtn}
+                        </div>`;
+                    } else {
+                        rightHtml = `<span class="topic-status ${statusClass}">${statusLabel}</span>`;
+                    }
+
+                    row.innerHTML = `
+                        <div>
+                            <div class="topic-name">${idx + 1}. ${t.name}${activeBadge}${selectedBadge}</div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.15rem;">${voteCount} vote${voteCount !== 1 ? 's' : ''}</div>
+                        </div>
+                        ${rightHtml}`;
+
+                    wrapper.appendChild(row);
+
+                    // ---- always-visible vote chips (PM only) ----
+                    if (userRole === 'pm' && voteCount > 0) {
+                        const chips = Object.entries(votes).map(([name, vd]) => {
+                            const ip = vd.ipAddress || '';
+                            const title = ip ? `IP: ${ip}` : '';
+                            return `<span class="vote-chip" title="${title}">
+                                <span>${name}</span>
+                                <span class="chip-val">${vd.voteValue}</span>
+                            </span>`;
+                        }).join('');
+
+                        const chipsDiv = document.createElement('div');
+                        chipsDiv.style.cssText = 'padding:0 1rem 0.65rem;';
+                        chipsDiv.innerHTML = `<div class="vote-chips">${chips}</div>`;
+                        wrapper.appendChild(chipsDiv);
+                    }
+
+                    panel.appendChild(wrapper);
+                });
+            }
+
+            function selectTopicToVote(topicId, topicName) {
+                selectedTopicId = topicId;
+                selectedVote = null;
+                document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('poll-title-display').innerText = topicName;
+                fetchSessionDetails();
+            }
+
+            async function revealTopicById(topicId) {
+                if (!confirm('Reveal votes for this topic? Voting will be closed.')) return;
+                try {
+                    const res = await fetch(
+                        `/api/sessions/${currentSessionId}/topics/${topicId}/reveal?code=${pmCode}`,
+                        { method: 'POST' }
+                    );
+                    if (!res.ok) alert('Not authorized to reveal votes.');
+                } catch (e) {
+                    console.error('Failed to reveal topic', e);
+                }
+            }
 
             function toggleSessions() {
                 const list = document.getElementById('session-list');
@@ -633,29 +916,27 @@
                 }
             }
 
-            async function fetchActivePolls() {
+            async function fetchActiveSessions() {
                 try {
-                    const res = await fetch('/api/polls');
-                    let polls = await res.json();
-                    
+                    const res = await fetch('/api/sessions');
+                    let sessions = await res.json();
+
                     const indicator = document.getElementById('session-count-indicator');
                     if (indicator) {
-                        indicator.innerText = `(${polls.length})`;
+                        indicator.innerText = `(${sessions.length})`;
                     }
 
                     const container = document.getElementById('session-list');
 
-                    if (polls.length === 0) {
+                    if (sessions.length === 0) {
                         container.innerHTML = '<div class="empty-state">No active sessions right now. Create one on the left!</div>';
                         return;
                     }
 
-                    // Sort descending (newest first assuming sequential IDs roughly or natural map order, ideally we'd use createdAt but it might not be in the JSON payload, assuming list order from end)
-                    // Assuming newer polls are appended to the end of the list:
-                    polls.reverse();
+                    sessions.reverse();
 
                     container.innerHTML = '';
-                    polls.forEach(p => {
+                    sessions.forEach(p => {
                         const div = document.createElement('div');
                         div.className = 'session-item';
 
@@ -690,20 +971,20 @@
                         container.appendChild(div);
                     });
                 } catch (e) {
-                    console.error('Failed to fetch polls', e);
+                    console.error('Failed to fetch sessions', e);
                 }
             }
 
-            async function createPoll() {
+            async function createSession() {
                 const nameInput = document.getElementById('poll-name').value.trim();
                 const btn = document.getElementById('create-btn');
-                if (!nameInput) return alert('Please enter a topic name!');
+                if (!nameInput) return alert('Please enter a session name!');
 
                 btn.disabled = true;
                 btn.innerText = 'Creating...';
 
                 try {
-                    const res = await fetch('/api/polls', {
+                    const res = await fetch('/api/sessions', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ name: nameInput })
@@ -720,11 +1001,11 @@
                     document.getElementById('member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
 
                     btn.innerText = 'Created!';
-                    fetchActivePolls(); // Refresh the list on the right
+                    fetchActiveSessions();
 
                 } catch (e) {
                     console.error(e);
-                    alert('Failed to create poll');
+                    alert('Failed to create session');
                     btn.disabled = false;
                     btn.innerText = 'Create Session';
                 }
@@ -740,18 +1021,139 @@
 
             async function confirmRevealVotes() {
                 closeRevealModal();
+                const topicToReveal = selectedTopicId || currentTopicId;
+                if (!topicToReveal) return;
                 try {
-                    const res = await fetch(`/api/polls/${currentPollId}/reveal?code=${pmCode}`, { method: 'POST' });
-                    if (res.ok) {
-                        document.getElementById('reveal-btn').disabled = true;
-                        document.getElementById('reveal-btn').innerText = 'Revealed';
-                    } else {
-                        alert("Not authorized to reveal votes.");
-                    }
+                    const res = await fetch(
+                        `/api/sessions/${currentSessionId}/topics/${topicToReveal}/reveal?code=${pmCode}`,
+                        { method: 'POST' }
+                    );
+                    if (!res.ok) alert('Not authorized to reveal votes.');
                 } catch (e) {
                     console.error('Failed to reveal votes', e);
-                    alert("Failed to reveal votes.");
                 }
+            }
+
+            async function createNewTopic() {
+                const nameInput = document.getElementById('next-topic-name').value.trim();
+                if (!nameInput) return alert("Please enter a topic name!");
+
+                try {
+                    const res = await fetch(`/api/sessions/${currentSessionId}/topics?code=${pmCode}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nameInput })
+                    });
+                    if (res.ok) {
+                        document.getElementById('next-topic-name').value = '';
+                    } else {
+                        alert("Failed to create topic.");
+                    }
+                } catch (e) {
+                    console.error("Error creating topic", e);
+                }
+            }
+
+            async function submitVote(val, cardElement) {
+                myName = document.getElementById('voter-name').value.trim();
+                if (!myName) return alert('Please enter your name first!');
+                if (!selectedTopicId) return alert('No topic selected to vote on.');
+
+                document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+                cardElement.classList.add('selected');
+                selectedVote = val;
+
+                const res = await fetch(`/api/sessions/${currentSessionId}/topics/${selectedTopicId}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, vote: val })
+                });
+
+                if (res.status === 409) {
+                    alert('This topic is already revealed and closed for voting.');
+                    cardElement.classList.remove('selected');
+                    selectedVote = null;
+                }
+            }
+
+            async function fetchSessionDetails() {
+                if (!currentSessionId) return;
+                try {
+                    const res = await fetch(`/api/sessions/${currentSessionId}`);
+                    if (res.status === 404) {
+                        alert('Session not found or expired.');
+                        window.location.href = window.location.pathname;
+                        return;
+                    }
+                    const data = await res.json();
+                    handleStreamUpdate(data);
+                } catch (e) {
+                    console.error('Error fetching session', e);
+                }
+            }
+
+            function renderResults(activeTopic) {
+                const tbody = document.getElementById('results-body');
+                tbody.innerHTML = '';
+
+                if (!activeTopic) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No active topic.</td></tr>';
+                    return;
+                }
+
+                const votesMap = activeTopic.votes || {};
+                const isRevealed = activeTopic.revealed === true;
+
+                const voters = Object.keys(votesMap);
+                if (voters.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Waiting for votes...</td></tr>';
+                    return;
+                }
+
+                voters.forEach(name => {
+                    const voteData = votesMap[name];
+                    const tr = document.createElement('tr');
+
+                    const tdName = document.createElement('td');
+                    tdName.style.fontWeight = '600';
+                    tdName.innerText = name;
+
+                    const tdIp = document.createElement('td');
+                    tdIp.style.color = 'var(--text-muted)';
+                    tdIp.style.fontSize = '0.85rem';
+                    tdIp.style.fontFamily = 'monospace';
+                    tdIp.innerText = voteData.ipAddress || '';
+
+                    const tdVote = document.createElement('td');
+                    tdVote.style.textAlign = 'right';
+
+                    if (isRevealed || userRole === 'pm') {
+                        tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
+                    } else {
+                        // Unrevealed: show own vote, hide others'
+                        tdVote.innerHTML = name === myName
+                            ? `<span class="vote-badge">${voteData.voteValue}</span>`
+                            : `<span class="vote-badge" style="background:var(--border);">?</span>`;
+                    }
+
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdIp);
+                    tr.appendChild(tdVote);
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function renderFiboCards() {
+                const container = document.getElementById('fibo-cards');
+                if (!container) return;
+                container.innerHTML = '';
+                FIBONACCI.forEach(val => {
+                    const div = document.createElement('div');
+                    div.className = 'vote-card';
+                    div.innerText = val;
+                    div.onclick = () => submitVote(val, div);
+                    container.appendChild(div);
+                });
             }
 
             function copyText(elementId, btnElement) {
@@ -773,110 +1175,12 @@
                     }, 2000);
                 });
             }
-
-            function renderFiboCards() {
-                const container = document.getElementById('fibo-cards');
-                FIBONACCI.forEach(val => {
-                    const div = document.createElement('div');
-                    div.className = 'vote-card';
-                    div.innerText = val;
-                    div.onclick = () => submitVote(val, div);
-                    container.appendChild(div);
-                });
-            }
-
-            async function submitVote(val, cardElement) {
-                myName = document.getElementById('voter-name').value.trim();
-                if (!myName) return alert('Please enter your name first!');
-
-                document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
-                cardElement.classList.add('selected');
-                selectedVote = val;
-
-                await fetch(`/api/polls/${currentPollId}/vote`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username: myName, vote: val })
-                });
-
-                // UI updates automatically via SSE stream
-            }
-
-            async function fetchPollDetails() {
-                if (!currentPollId) return;
-                try {
-                    const res = await fetch(`/api/polls/${currentPollId}`);
-                    if (res.status === 404) {
-                        alert('Poll not found or expired.');
-                        window.location.href = window.location.pathname;
-                        return;
-                    }
-                    const data = await res.json();
-
-                    let title = data.name;
-                    if (userRole === 'pm') title += ' (PM View)';
-                    document.getElementById('poll-title-display').innerText = title;
-                    document.getElementById('creator-info').innerText = 'Created by IP: ' + data.creatorIp;
-
-                    renderResults(data);
-                } catch (e) {
-                    console.error('Error fetching poll', e);
-                }
-            }
-
-            function renderResults(pollData) {
-                const tbody = document.getElementById('results-body');
-                tbody.innerHTML = '';
-
-                const votesMap = pollData.votes || {};
-                const isRevealed = pollData.revealed === true;
-
-                const voters = Object.keys(votesMap);
-                if (voters.length === 0) {
-                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Waiting for votes...</td></tr>';
-                    return;
-                }
-
-                voters.forEach(name => {
-                    const voteData = votesMap[name];
-                    const tr = document.createElement('tr');
-
-                    const tdName = document.createElement('td');
-                    tdName.style.fontWeight = '600';
-                    tdName.innerText = name;
-
-                    const tdIp = document.createElement('td');
-                    tdIp.style.color = 'var(--text-muted)';
-                    tdIp.style.fontSize = '0.85rem';
-                    tdIp.style.fontFamily = 'monospace';
-
-                    const tdVote = document.createElement('td');
-                    tdVote.style.textAlign = 'right';
-
-                    if (userRole === 'pm') {
-                        tdIp.innerText = voteData.ipAddress;
-                        tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
-                    } else {
-                        if (name === myName || isRevealed) {
-                            tdIp.innerText = isRevealed ? voteData.ipAddress : '***.***.***.***';
-                            tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
-                        } else {
-                            tdIp.innerText = '***.***.***.***';
-                            tdVote.innerHTML = `<span class="vote-badge" style="background:var(--border);">?</span>`;
-                        }
-                    }
-
-                    tr.appendChild(tdName);
-                    tr.appendChild(tdIp);
-                    tr.appendChild(tdVote);
-                    tbody.appendChild(tr);
-                });
-            }
         </script>
         <div id="reveal-modal" class="modal-overlay hidden">
             <div class="modal-content">
                 <h3 style="margin-top: 0; color: var(--text-main);">Reveal Estimates?</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Are you sure you want to reveal the estimates? All participants will be able to see the votes.</p>
+                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Are you sure you want to
+                    reveal the estimates? All participants will be able to see the votes.</p>
                 <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
                     <button class="outline-btn" onclick="closeRevealModal()">Cancel</button>
                     <button onclick="confirmRevealVotes()" style="background-color: var(--accent);">Yes, Reveal</button>
