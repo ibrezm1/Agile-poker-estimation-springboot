@@ -1,75 +1,106 @@
-# Spring Boot Voter Demo
+# Agile Poker Estimation (Spring Boot)
 
-This is a Spring Boot project.
+A modern, real-time Agile Poker (Planning Poker) estimation tool built with Spring Boot and native web technologies.
 
-## How to Run locally
+## 🏛️ High-Level Architecture
 
-To compile and run the application locally, use the provided Gradle wrapper:
+The application follows a lightweight, real-time event-driven architecture designed for low latency and high scalability in ephemeral sessions.
 
+```mermaid
+graph TD
+    subgraph Client ["Browser Clients (Voters & PMs)"]
+        UI["Vanilla HTML/CSS/JS"]
+        ES["EventSource (SSE)"]
+        RT["REST API Calls"]
+    end
+
+    subgraph Server ["Spring Boot Backend"]
+        PC["PokerController (REST)"]
+        PSS["PokerSessionService"]
+        EM["SseEmitter Management"]
+        SH["Scheduled Housekeeping"]
+    end
+
+    subgraph State ["In-Memory Data Store"]
+        SM["ConcurrentHashMap (Sessions)"]
+    end
+
+    RT --> PC
+    PC --> PSS
+    PSS -- "Update State" --> SM
+    PSS -- "Broadcast" --> EM
+    EM -- "Push Updates" --> ES
+    SH -- "Cleanup Expired" --> SM
+```
+
+### Components
+- **Real-Time Synchronization**: Uses **Server-Sent Events (SSE)** via Spring's `SseEmitter`. Unlike WebSockets, SSE is unidirectional (Server → Client), making it lighter and more efficient for state broadcasting while standard REST takes care of client actions.
+- **State Management**: Distributed state is managed in-memory using thread-safe `ConcurrentHashMap`. This ensures rapid response times without the overhead of a database for ephemeral voting sessions.
+- **Modular Frontend**: A strictly decoupled frontend architecture using native Web APIs. Assets are modularized into `.html`, `.css`, and `.jvx` files, allowing for clean maintenance without complex build tools.
+
+---
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Java 21+
+- Gradle (provided via `./gradlew`)
+
+### Run Locally
 ```bash
 ./gradlew bootRun
 ```
+The server will start at `http://localhost:8080`.
 
-This will download the necessary dependencies and Gradle distribution (if needed), compile your source files, and start the embedded Tomcat server on port `8080`.
+---
 
-### Compilation Only
+## 🛠️ Tech Stack & Features
 
-If you just want to compile the project to verify there are no compilation errors:
+- **Backend**: Spring Boot 4.0.3, Java 21.0.6.
+- **Frontend**: Vanilla HTML5, CSS3, and JavaScript (Modular).
+- **Theme Engine**: Integrated Dark/Light mode selection with cookie persistence.
+- **UX Excellence**: 
+    - Real-time voting grid updates.
+    - Animation feedback (shake effects on errors).
+    - Audio cues (success/error pings).
+    - Persistent Voter Name (saved for 30 days).
+- **Session Lifecycles**: Automatic data expiration and cleanup (24-hour TTL).
 
-```bash
-./gradlew compileJava
-```
+---
 
-## API Documentation & Swagger
+## 🛰️ API Documentation
 
-This application includes Swagger UI for API documentation and testing.
+Swagger UI is available at **[/swagger-ui.html](http://localhost:8080/swagger-ui.html)** when running.
 
-Once the application is running, you can access the Swagger UI at:
-- **[http://localhost:8080/swagger-ui.html](http://localhost:8080/swagger-ui.html)**
+### Key Endpoints
 
-The OpenAPI JSON description is available at:
-- **[http://localhost:8080/v3/api-docs](http://localhost:8080/v3/api-docs)**
+| Method | Endpoint | Description |
+|---|---|---|
+| `GET` | `/api/sessions` | List all active sessions |
+| `POST` | `/api/sessions` | Create a new estimation session |
+| `POST` | `/api/sessions/{id}/topics` | Add a new topic (PM only) |
+| `POST` | `/api/sessions/{id}/topics/{tId}/reveal` | Reveal votes for a topic (PM only) |
+| `POST` | `/api/sessions/{id}/topics/{tId}/vote` | Cast or update a vote |
+| `GET` | `/api/sessions/stream/{id}` | SSE stream for real-time updates |
 
-### Endpoints Overview
+---
 
-The application exposes the following REST endpoints for Agile Poker:
+## 🧹 Session Cleanup
+- **Automatic**: A Background task runs every hour to remove sessions older than 24 hours.
+- **Manual**: Sessions can be manually purged via `DELETE /api/sessions?hours=N`.
 
-#### `POST /api/polls`
-Create a new poll.
-- **Body**: `{"name": "My Poll Name"}`
-- **Response**: The created `Poll` object with an ID.
+---
 
-#### `GET /api/polls`
-List all active polls.
-- **Response**: A list of `Poll` objects.
+## 🎨 Theme Support
+The application supports persistent Dark and Light modes.
+- **Dark Mode (Default)**: Deep blue aesthetic (`#0f172a`).
+- **Light Mode**: Clean, airy interface (`#f8fafc`).
+- Preferences are stored in the `appTheme` cookie.
 
-#### `GET /api/polls/{id}`
-Get details of a specific poll, including its current votes.
-- **Response**: The `Poll` object.
+---
 
-#### `POST /api/polls/{id}/vote`
-Cast a vote on a specific poll.
-- **Body**: `{"username": "YourName", "vote": "5"}`
-- **Response**: The updated `Poll` object.
-
-#### `DELETE /api/polls`
-Delete polls that are older than a specific number of hours.
-- **Parameters**: `hours` (optional query parameter, default is `1`). For example, `DELETE /api/polls?hours=2` will delete all polls created more than 2 hours ago.
-- **Response**: HTTP 204 No Content.
-
-## Real-Time Updates (Server-Sent Events)
-
-This application uses **Server-Sent Events (SSE)** instead of WebSockets to stream live voting updates from the server to connected clients in real-time.
-
-- **Backend Context**: Implemented using Spring's `SseEmitter`. You can find the real-time logic in the following files:
-    - `src/main/java/com/example/voter/demo/controller/PollController.java` (`streamPoll` endpoint)
-    - `src/main/java/com/example/voter/demo/service/PollService.java` (Managing the `ConcurrentHashMap` of active `SseEmitters`)
-- **Frontend Context**: The client-side connection is established using the native browser `EventSource` API, which listens for the published vote payload data in `src/main/resources/static/poker.html`.
-
-## Memory and Cleanup
-
-- **Storage**: All data is stored in memory using `ConcurrentHashMap`. Data will be lost when the application stops.
-- **Cleanup**: A scheduled background task runs every hour and automatically deletes polls that are older than 1 day.
-
-Todo : 
-Can you create a product manager view who creates and can view everyones submissions and one view for the members who can only post the vote 
+## 🛡️ PM Dashboards
+The PM view is protected by a 3-digit access code generated at session creation. PMs can:
+- Create new topics dynamically.
+- Reveal votes (closing the topic).
+- View all participants' IP addresses and real-time voting status.
