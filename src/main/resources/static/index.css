@@ -1,4 +1,5 @@
 :root {
+    /* Dark Theme (Default) */
     --bg-color: #0f172a;
     --surface: #1e293b;
     --primary: #3b82f6;
@@ -7,12 +8,28 @@
     --text-muted: #94a3b8;
     --border: #334155;
     --accent: #8b5cf6;
+    --shadow: rgba(0, 0, 0, 0.5);
+    --transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+body.light-mode {
+    /* Light Theme */
+    --bg-color: #f8fafc;
+    --surface: #ffffff;
+    --primary: #2563eb;
+    --primary-hover: #1d4ed8;
+    --text-main: #0f172a;
+    --text-muted: #64748b;
+    --border: #e2e8f0;
+    --accent: #7c3aed;
+    --shadow: rgba(15, 23, 42, 0.08);
 }
 
 body {
     font-family: 'Inter', sans-serif;
     background-color: var(--bg-color);
     color: var(--text-main);
+    transition: var(--transition);
     margin: 0;
     padding: 0;
     display: flex;
@@ -22,12 +39,39 @@ body {
     min-height: 100vh;
 }
 
+/* Toggle Button (Common) */
+.theme-toggle {
+    position: absolute;
+    top: 2rem;
+    right: 2rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 1.2rem;
+    box-shadow: 0 4px 6px -1px var(--shadow);
+    z-index: 100;
+    transition: var(--transition), transform 0.2s;
+}
+
+.theme-toggle:hover {
+    border-color: var(--primary);
+    transform: translateY(-2px);
+}
+
 .container {
     width: 100%;
-    max-width: 600px;
+    max-width: 1000px;
     padding: 2rem;
     box-sizing: border-box;
     text-align: center;
+    position: relative;
 }
 
 h1 {
@@ -74,7 +118,7 @@ p.subtitle {
 
 .app-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 12px 20px -8px var(--shadow);
     border-color: var(--primary);
 }
 

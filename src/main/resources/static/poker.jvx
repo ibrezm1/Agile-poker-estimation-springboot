@@ -1,6 +1,27 @@
             // Keep only till 34
             const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34'];
 
+            function setCookie(name, value, days) {
+                let expires = "";
+                if (days) {
+                    let date = new Date();
+                    date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                    expires = "; expires=" + date.toUTCString();
+                }
+                document.cookie = name + "=" + (value || "") + expires + "; path=/";
+            }
+
+            function getCookie(name) {
+                let nameEQ = name + "=";
+                let ca = document.cookie.split(';');
+                for (let i = 0; i < ca.length; i++) {
+                    let c = ca[i];
+                    while (c.charAt(0) == ' ') c = c.substring(1, c.length);
+                    if (c.indexOf(nameEQ) == 0) return c.substring(nameEQ.length, c.length);
+                }
+                return null;
+            }
+
             function formatDateTime(isoString) {
                 if (!isoString) return '';
                 const d = typeof isoString === 'number' ? new Date(isoString * 1000) : new Date(isoString);
@@ -29,6 +50,61 @@
                 }
             }
 
+            function playPing(isError = false) {
+                try {
+                    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    const osc = ctx.createOscillator();
+                    const gain = ctx.createGain();
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    if (isError) {
+                        osc.type = 'sawtooth';
+                        osc.frequency.setValueAtTime(100, ctx.currentTime);
+                        osc.frequency.exponentialRampToValueAtTime(40, ctx.currentTime + 0.2);
+                        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.2);
+                    } else {
+                        osc.type = 'sine';
+                        osc.frequency.setValueAtTime(880, ctx.currentTime);
+                        osc.frequency.exponentialRampToValueAtTime(440, ctx.currentTime + 0.2);
+                        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.2);
+                        osc.start();
+                        osc.stop(ctx.currentTime + 0.2);
+                    }
+                } catch (e) { console.warn("Audio not supported"); }
+            }
+
+            // Theme Management
+            function initTheme() {
+                const savedTheme = getCookie('appTheme');
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                
+                if (savedTheme === 'light') {
+                    document.body.classList.add('light-mode');
+                    if (themeToggleBtn) themeToggleBtn.innerText = '🌙';
+                } else {
+                    document.body.classList.remove('light-mode');
+                    if (themeToggleBtn) themeToggleBtn.innerText = '☀️';
+                }
+            }
+
+            function toggleTheme() {
+                const isLight = document.body.classList.toggle('light-mode');
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                
+                if (isLight) {
+                    setCookie('appTheme', 'light', 30);
+                    if (themeToggleBtn) themeToggleBtn.innerText = '🌙';
+                } else {
+                    setCookie('appTheme', 'dark', 30);
+                    if (themeToggleBtn) themeToggleBtn.innerText = '☀️';
+                }
+            }
+
             let currentSessionId = null;
             let currentTopicId = null;   // PM's active topic
             let selectedTopicId = null;  // topic user has selected to vote on
@@ -48,6 +124,23 @@
 
                 if (role === 'pm') {
                     userRole = 'pm';
+                }
+
+                // Load name from cookie
+                const savedName = getCookie('voterName');
+                if (savedName) {
+                    myName = savedName;
+                    const nameInput = document.getElementById('voter-name');
+                    if (nameInput) nameInput.value = savedName;
+                }
+
+                // Save name to cookie when it changes
+                const nameInput = document.getElementById('voter-name');
+                if (nameInput) {
+                    nameInput.addEventListener('input', (e) => {
+                        myName = e.target.value.trim();
+                        setCookie('voterName', myName, 100); // Store for 100 days
+                    });
                 }
 
                 if (id) {
@@ -100,6 +193,43 @@
                 }
 
                 fetchActiveSessions();
+
+                // Theme Initialization
+                initTheme();
+                const themeToggleBtn = document.getElementById('theme-toggle');
+                if (themeToggleBtn) {
+                    themeToggleBtn.addEventListener('click', toggleTheme);
+                }
+
+                // Initial Button state and listeners
+                const pollNameInput = document.getElementById('poll-name');
+                const createBtn = document.getElementById('create-btn');
+                
+                if (pollNameInput && createBtn) {
+                    const updateBtn = () => {
+                        if (pollNameInput.value.trim() === '') {
+                            createBtn.classList.add('btn-disabled');
+                        } else {
+                            createBtn.classList.remove('btn-disabled');
+                        }
+                    };
+                    pollNameInput.addEventListener('input', updateBtn);
+                    updateBtn(); // Initial check
+                }
+
+                const nextTopicInput = document.getElementById('next-topic-name');
+                const nextTopicBtn = document.getElementById('next-topic-btn');
+                if (nextTopicInput && nextTopicBtn) {
+                    const updateNextBtn = () => {
+                        if (nextTopicInput.value.trim() === '') {
+                            nextTopicBtn.classList.add('btn-disabled');
+                        } else {
+                            nextTopicBtn.classList.remove('btn-disabled');
+                        }
+                    };
+                    nextTopicInput.addEventListener('input', updateNextBtn);
+                    updateNextBtn();
+                }
             };
 
             function handleStreamUpdate(sessionData) {
@@ -146,6 +276,18 @@
                 }
 
                 renderResults(selectedTopic);
+
+                // Disable/Enable Fibonacci cards based on topic state
+                const fiboCards = document.querySelectorAll('.vote-card');
+                const estimateLabel = document.querySelector('label[for="fibo-cards"]') || document.querySelector('#voting-card label:last-of-type');
+                
+                if (selectedTopic && selectedTopic.revealed) {
+                    fiboCards.forEach(c => c.classList.add('disabled'));
+                    if (estimateLabel) estimateLabel.innerText = 'Voting closed for this topic';
+                } else {
+                    fiboCards.forEach(c => c.classList.remove('disabled'));
+                    if (estimateLabel) estimateLabel.innerText = 'Select your estimate';
+                }
             }
 
             function renderTopicsPanel(topics, selectedId, activeId) {
@@ -258,7 +400,6 @@
             }
 
             async function revealTopicById(topicId) {
-                if (!confirm('Reveal votes for this topic? Voting will be closed.')) return;
                 try {
                     const res = await fetch(
                         `/api/sessions/${currentSessionId}/topics/${topicId}/reveal?code=${pmCode}`,
@@ -344,11 +485,21 @@
             }
 
             async function createSession() {
-                const nameInput = document.getElementById('poll-name').value.trim();
+                const nameInputEl = document.getElementById('poll-name');
+                const nameInput = nameInputEl.value.trim();
                 const btn = document.getElementById('create-btn');
-                if (!nameInput) return alert('Please enter a session name!');
+                
+                if (!nameInput) {
+                    playPing(true);
+                    nameInputEl.classList.add('shake');
+                    nameInputEl.focus();
+                    setTimeout(() => nameInputEl.classList.remove('shake'), 400);
+                    return;
+                }
 
+                playPing(false);
                 btn.disabled = true;
+                btn.classList.add('btn-disabled');
                 btn.innerText = 'Creating...';
 
                 try {
@@ -379,16 +530,7 @@
                 }
             }
 
-            function revealVotes() {
-                document.getElementById('reveal-modal').classList.remove('hidden');
-            }
-
-            function closeRevealModal() {
-                document.getElementById('reveal-modal').classList.add('hidden');
-            }
-
-            async function confirmRevealVotes() {
-                closeRevealModal();
+            async function revealVotes() {
                 const topicToReveal = selectedTopicId || currentTopicId;
                 if (!topicToReveal) return;
                 try {
@@ -403,8 +545,17 @@
             }
 
             async function createNewTopic() {
-                const nameInput = document.getElementById('next-topic-name').value.trim();
-                if (!nameInput) return alert("Please enter a topic name!");
+                const nameInputEl = document.getElementById('next-topic-name');
+                const nameInput = nameInputEl.value.trim();
+                const btn = document.getElementById('next-topic-btn');
+
+                if (!nameInput) {
+                    playPing(true);
+                    nameInputEl.classList.add('shake');
+                    nameInputEl.focus();
+                    setTimeout(() => nameInputEl.classList.remove('shake'), 400);
+                    return;
+                }
 
                 try {
                     const res = await fetch(`/api/sessions/${currentSessionId}/topics?code=${pmCode}`, {
@@ -413,7 +564,10 @@
                         body: JSON.stringify({ name: nameInput })
                     });
                     if (res.ok) {
-                        document.getElementById('next-topic-name').value = '';
+                        playPing(false);
+                        nameInputEl.value = '';
+                        // Trigger button state update
+                        btn.classList.add('btn-disabled');
                     } else {
                         alert("Failed to create topic.");
                     }
@@ -423,6 +577,8 @@
             }
 
             async function submitVote(val, cardElement) {
+                if (cardElement.classList.contains('disabled')) return;
+                
                 myName = document.getElementById('voter-name').value.trim();
                 if (!myName) return alert('Please enter your name first!');
                 if (!selectedTopicId) return alert('No topic selected to vote on.');
@@ -436,6 +592,9 @@
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username: myName, vote: val })
                 });
+
+                // Also ensure it is saved to cookie when voting
+                setCookie('voterName', myName, 30);
 
                 if (res.status === 409) {
                     alert('This topic is already revealed and closed for voting.');

@@ -11,7 +11,8 @@
 
 <body>
 
-    <div class="container" style="max-width: 1000px;">
+    <div class="container">
+        <button class="theme-toggle" id="theme-toggle" title="Toggle Light/Dark Mode">☀️</button>
         <div class="header">
             <h1>Agile Poker</h1>
             <p class="subtitle">Real-time collaborative estimation</p>
@@ -97,7 +98,7 @@
                             <div style="display:flex; gap:0.5rem;">
                                 <input type="text" id="next-topic-name" placeholder="e.g. ENG-123 Payment Fix"
                                     style="flex:1;">
-                                <button onclick="createNewTopic()"
+                                <button id="next-topic-btn" onclick="createNewTopic()"
                                     style="background-color:var(--success);">Start</button>
                             </div>
                         </div>
@@ -157,17 +158,6 @@
         </div>
 
         <script src="poker.jvx"></script>
-        <div id="reveal-modal" class="modal-overlay hidden">
-            <div class="modal-content">
-                <h3 style="margin-top: 0; color: var(--text-main);">Reveal Estimates?</h3>
-                <p style="color: var(--text-muted); font-size: 0.95rem; line-height: 1.5;">Are you sure you want to
-                    reveal the estimates? All participants will be able to see the votes.</p>
-                <div style="display: flex; justify-content: flex-end; gap: 1rem; margin-top: 2rem;">
-                    <button class="outline-btn" onclick="closeRevealModal()">Cancel</button>
-                    <button onclick="confirmRevealVotes()" style="background-color: var(--accent);">Yes, Reveal</button>
-                </div>
-            </div>
-        </div>
 </body>
 
 </html>
