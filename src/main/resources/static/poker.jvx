@@ -1,0 +1,545 @@
+            // Keep only till 34
+            const FIBONACCI = ['0', '1', '2', '3', '5', '8', '13', '21', '34'];
+
+            function formatDateTime(isoString) {
+                if (!isoString) return '';
+                const d = typeof isoString === 'number' ? new Date(isoString * 1000) : new Date(isoString);
+                return d.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            }
+
+            function updateExpirationNotice(createdAtIso) {
+                if (!createdAtIso) return;
+                const created = typeof createdAtIso === 'number' ? new Date(createdAtIso * 1000) : new Date(createdAtIso);
+                const now = new Date();
+                const expires = new Date(created.getTime() + 24 * 60 * 60 * 1000);
+                const msLeft = expires - now;
+                const hoursLeft = msLeft / (1000 * 60 * 60);
+
+                const noticeEl = document.getElementById('session-expiration-notice');
+                if (!noticeEl) return;
+
+                if (hoursLeft <= 0) {
+                    noticeEl.innerHTML = '<span style="color: #ef4444; font-weight: 600;">Expired</span>';
+                } else if (hoursLeft <= 2) {
+                    const h = Math.floor(hoursLeft);
+                    const m = Math.floor((hoursLeft - h) * 60);
+                    noticeEl.innerHTML = `<span style="color: rgba(239, 68, 68, 0.9); background-color: rgba(239, 68, 68, 0.1); padding: 0.15rem 0.4rem; border-radius: 4px; font-weight: 600;">⚠️ Expires in ${h}h ${m}m</span>`;
+                } else {
+                    noticeEl.innerHTML = `Expires in ~${Math.round(hoursLeft)} hours`;
+                }
+            }
+
+            let currentSessionId = null;
+            let currentTopicId = null;   // PM's active topic
+            let selectedTopicId = null;  // topic user has selected to vote on
+            let pmAutoExpandId = null;   // topic to auto-expand in PM view
+            let selectedVote = null;
+            let userRole = 'member';
+            let myName = '';
+            let pmCode = null;
+            let lastActiveTopicId = null;
+
+            window.onload = async () => {
+                const urlParams = new URLSearchParams(window.location.search);
+                const id = urlParams.get('id');
+                const role = urlParams.get('role');
+                const code = urlParams.get('code');
+                pmCode = code;
+
+                if (role === 'pm') {
+                    userRole = 'pm';
+                }
+
+                if (id) {
+                    currentSessionId = id;
+
+                    if (userRole === 'pm') {
+                        try {
+                            const valRes = await fetch(`/api/sessions/${currentSessionId}/validate-pm?code=${code || ''}`);
+                            const isValid = await valRes.json();
+                            if (!isValid) {
+                                alert("Invalid or missing PM passcode! Joining as a regular member instead.");
+                                userRole = 'member';
+                                window.location.href = '/poker.html?id=' + currentSessionId;
+                                return;
+                            }
+                        } catch (e) {
+                            console.error("Validation failed", e);
+                        }
+                    }
+
+                    document.getElementById('vote-section').classList.remove('hidden');
+
+                    if (userRole === 'pm') {
+                        const baseUrl = window.location.origin + '/poker.html';
+                        const memberUrl = baseUrl + '?id=' + currentSessionId;
+                        document.getElementById('pm-share-container').classList.remove('hidden');
+                        document.getElementById('vote-member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
+
+                        // Hide the entire voting card for PM
+                        document.getElementById('voting-card')?.classList.add('hidden');
+                    } else {
+                        renderFiboCards();
+                    }
+
+                    // Initial fetch
+                    fetchSessionDetails();
+
+                    // Connect SSE Stream
+                    const eventSource = new EventSource(`/api/sessions/${currentSessionId}/stream`);
+                    eventSource.onmessage = (event) => {
+                        const sessionData = JSON.parse(event.data);
+                        handleStreamUpdate(sessionData);
+                    };
+
+                    eventSource.onerror = () => {
+                        console.log("SSE Connection lost.");
+                    };
+                } else {
+                    document.getElementById('home-section').classList.remove('hidden');
+                }
+
+                fetchActiveSessions();
+            };
+
+            function handleStreamUpdate(sessionData) {
+                currentTopicId = sessionData.activeTopicId;
+
+                // Auto-select the active topic if user has nothing selected, 
+                // or if a NEW active topic has been started.
+                if (!selectedTopicId) {
+                    selectedTopicId = currentTopicId;
+                } else if (lastActiveTopicId && lastActiveTopicId !== currentTopicId && currentTopicId) {
+                    selectedTopicId = currentTopicId;
+                }
+                lastActiveTopicId = currentTopicId;
+
+                // Clear card selection when selected topic changes
+                const selectedTopic = sessionData.topics
+                    ? sessionData.topics.find(t => t.id === selectedTopicId)
+                    : null;
+
+                // Update session name header
+                const sessionTitle = document.getElementById('session-name-title');
+                if (sessionTitle) sessionTitle.innerText = sessionData.name + (userRole === 'pm' ? ' (PM)' : '');
+
+                // Update creation and expiration time
+                if (sessionData.createdAt) {
+                    const ctEl = document.getElementById('session-creation-time');
+                    if (ctEl) ctEl.innerText = 'Created: ' + formatDateTime(sessionData.createdAt);
+                    updateExpirationNotice(sessionData.createdAt);
+                }
+
+                // Render topic history panel
+                renderTopicsPanel(sessionData.topics || [], selectedTopicId, currentTopicId);
+
+                // Update voting card title to selected topic
+                const title = selectedTopic ? selectedTopic.name : 'Waiting for topic...';
+                document.getElementById('poll-title-display').innerText = title;
+
+                // Update participants heading
+                const heading = document.getElementById('results-heading');
+                if (heading) {
+                    heading.innerText = selectedTopic
+                        ? `Participants — ${selectedTopic.name}`
+                        : 'Participants';
+                }
+
+                renderResults(selectedTopic);
+            }
+
+            function renderTopicsPanel(topics, selectedId, activeId) {
+                const panel = document.getElementById('topics-panel');
+                const countEl = document.getElementById('session-topic-count');
+                if (!panel) return;
+
+                if (countEl) countEl.innerText = `${topics.length} topic${topics.length !== 1 ? 's' : ''}`;
+
+                panel.innerHTML = '';
+                topics.forEach((t, idx) => {
+                    const isSelected = t.id === selectedId;
+                    const isActive = t.id === activeId;
+                    const votes = t.votes || {};
+                    const voteCount = Object.keys(votes).length;
+                    const isClosed = t.revealed;
+
+                    // ---- wrapper (entire card is the click target) ----
+                    const wrapper = document.createElement('div');
+                    wrapper.style.cssText = `border:1px solid ${isSelected ? 'var(--primary)' : 'var(--border)'}; border-radius:8px; background:${isSelected ? 'rgba(59,130,246,0.08)' : 'var(--card)'}; overflow:hidden; transition:all 0.2s; cursor:pointer;`;
+
+                    // All topics clickable — handler on wrapper so the entire area responds
+                    if (userRole === 'pm') {
+                        wrapper.title = 'Click to view votes';
+                        wrapper.onclick = () => {
+                            selectedTopicId = t.id;
+                            pmAutoExpandId = t.id;
+                            fetchSessionDetails();
+                        };
+                    } else if (!isClosed) {
+                        wrapper.title = 'Click to vote on this topic';
+                        wrapper.onclick = () => selectTopicToVote(t.id, t.name);
+                    } else {
+                        wrapper.title = 'Click to view results';
+                        wrapper.onclick = () => {
+                            selectedTopicId = t.id;
+                            fetchSessionDetails();
+                        };
+                    }
+
+                    // ---- row header ----
+                    const row = document.createElement('div');
+                    row.style.cssText = 'display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;';
+
+                    let statusLabel, statusClass;
+                    if (isClosed) { statusLabel = '🔒 Closed'; statusClass = 'revealed'; }
+                    else if (isActive) { statusLabel = '▶ Active'; statusClass = 'active'; }
+                    else { statusLabel = 'Open'; statusClass = 'pending'; }
+
+                    const activeBadge = isActive && !isClosed ? '<span style="font-size:0.7rem;color:var(--primary);margin-left:0.4rem;">(newest)</span>' : '';
+                    let selectedBadge = '';
+                    if (isSelected) {
+                        if (userRole === 'pm') {
+                            selectedBadge = '<span style="font-size:0.7rem;color:var(--accent);margin-left:0.4rem;">← viewing</span>';
+                        } else if (!isClosed) {
+                            selectedBadge = '<span style="font-size:0.7rem;color:var(--accent);margin-left:0.4rem;">← voting here</span>';
+                        } else {
+                            selectedBadge = '<span style="font-size:0.7rem;color:var(--text-muted);margin-left:0.4rem;">← viewing results</span>';
+                        }
+                    }
+
+                    // Right side: PM gets reveal btn only, members get status badge
+                    let rightHtml;
+                    if (userRole === 'pm') {
+                        const revealBtn = isClosed ? '' : `<button onclick="event.stopPropagation(); revealTopicById('${t.id}')" style="font-size:0.75rem;padding:0.25rem 0.6rem;background:var(--accent);color:#fff;border:none;border-radius:6px;cursor:pointer;">Reveal</button>`;
+                        rightHtml = `<div style="display:flex;align-items:center;gap:0.5rem;">
+                            <span class="topic-status ${statusClass}">${statusLabel}</span>
+                            ${revealBtn}
+                        </div>`;
+                    } else {
+                        rightHtml = `<span class="topic-status ${statusClass}">${statusLabel}</span>`;
+                    }
+
+                    row.innerHTML = `
+                        <div>
+                            <div class="topic-name">${idx + 1}. ${t.name}${activeBadge}${selectedBadge}</div>
+                            <div style="font-size:0.78rem;color:var(--text-muted);margin-top:0.15rem;">${voteCount} vote${voteCount !== 1 ? 's' : ''}</div>
+                        </div>
+                        ${rightHtml}`;
+
+                    wrapper.appendChild(row);
+
+                    // ---- always-visible vote chips (PM only) ----
+                    if (userRole === 'pm' && voteCount > 0) {
+                        const chips = Object.entries(votes).map(([name, vd]) => {
+                            const ip = vd.ipAddress || '';
+                            const title = ip ? `IP: ${ip}` : '';
+                            return `<span class="vote-chip" title="${title}">
+                                <span>${name}</span>
+                                <span class="chip-val">${vd.voteValue}</span>
+                            </span>`;
+                        }).join('');
+
+                        const chipsDiv = document.createElement('div');
+                        chipsDiv.style.cssText = 'padding:0 1rem 0.65rem;';
+                        chipsDiv.innerHTML = `<div class="vote-chips">${chips}</div>`;
+                        wrapper.appendChild(chipsDiv);
+                    }
+
+                    panel.appendChild(wrapper);
+                });
+            }
+
+            function selectTopicToVote(topicId, topicName) {
+                selectedTopicId = topicId;
+                selectedVote = null;
+                document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+                document.getElementById('poll-title-display').innerText = topicName;
+                fetchSessionDetails();
+            }
+
+            async function revealTopicById(topicId) {
+                if (!confirm('Reveal votes for this topic? Voting will be closed.')) return;
+                try {
+                    const res = await fetch(
+                        `/api/sessions/${currentSessionId}/topics/${topicId}/reveal?code=${pmCode}`,
+                        { method: 'POST' }
+                    );
+                    if (!res.ok) alert('Not authorized to reveal votes.');
+                } catch (e) {
+                    console.error('Failed to reveal topic', e);
+                }
+            }
+
+            function toggleSessions() {
+                const list = document.getElementById('session-list');
+                const icon = document.getElementById('session-toggle-icon');
+                if (list.classList.contains('hidden')) {
+                    list.classList.remove('hidden');
+                    icon.innerText = '▲';
+                    fetchActivePolls();
+                } else {
+                    list.classList.add('hidden');
+                    icon.innerText = '▼';
+                }
+            }
+
+            async function fetchActiveSessions() {
+                try {
+                    const res = await fetch('/api/sessions');
+                    let sessions = await res.json();
+
+                    const indicator = document.getElementById('session-count-indicator');
+                    if (indicator) {
+                        indicator.innerText = `(${sessions.length})`;
+                    }
+
+                    const container = document.getElementById('session-list');
+
+                    if (sessions.length === 0) {
+                        container.innerHTML = '<div class="empty-state">No active sessions right now. Create one on the left!</div>';
+                        return;
+                    }
+
+                    sessions.reverse();
+
+                    container.innerHTML = '';
+                    sessions.forEach(p => {
+                        const div = document.createElement('div');
+                        div.className = 'session-item';
+
+                        const info = document.createElement('div');
+                        const createdStr = p.createdAt ? formatDateTime(p.createdAt) : 'Unknown time';
+                        info.innerHTML = `
+                        <div class="session-title">${p.name}</div>
+                        <div class="session-meta">Created by ${p.creatorIp} &bull; ${createdStr}</div>
+                    `;
+
+                        const actions = document.createElement('div');
+                        actions.className = 'session-actions';
+
+                        const joinMemberBtn = document.createElement('button');
+                        joinMemberBtn.innerText = 'Join';
+                        joinMemberBtn.onclick = () => window.location.href = '/poker.html?id=' + p.id;
+
+                        const joinPmBtn = document.createElement('button');
+                        joinPmBtn.className = 'outline-btn';
+                        joinPmBtn.innerText = 'Join as PM';
+                        joinPmBtn.onclick = () => {
+                            const pmCodePrompt = prompt("Enter 3-digit PM Code for " + p.name + ":");
+                            if (pmCodePrompt) {
+                                window.location.href = '/poker.html?id=' + p.id + '&role=pm&code=' + pmCodePrompt;
+                            }
+                        };
+
+                        actions.appendChild(joinPmBtn);
+                        actions.appendChild(joinMemberBtn);
+
+                        div.appendChild(info);
+                        div.appendChild(actions);
+                        container.appendChild(div);
+                    });
+                } catch (e) {
+                    console.error('Failed to fetch sessions', e);
+                }
+            }
+
+            async function createSession() {
+                const nameInput = document.getElementById('poll-name').value.trim();
+                const btn = document.getElementById('create-btn');
+                if (!nameInput) return alert('Please enter a session name!');
+
+                btn.disabled = true;
+                btn.innerText = 'Creating...';
+
+                try {
+                    const res = await fetch('/api/sessions', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nameInput })
+                    });
+                    const data = await res.json();
+
+                    const baseUrl = window.location.origin + '/poker.html';
+                    const pmUrl = baseUrl + '?id=' + data.id + '&role=pm&code=' + data.pmCode;
+                    const memberUrl = baseUrl + '?id=' + data.id;
+
+                    document.getElementById('share-container').classList.remove('hidden');
+                    document.getElementById('pm-code-display').innerText = data.pmCode;
+                    document.getElementById('pm-link-text').innerHTML = `<a href="${pmUrl}" target="_blank">${pmUrl}</a>`;
+                    document.getElementById('member-link-text').innerHTML = `<a href="${memberUrl}" target="_blank">${memberUrl}</a>`;
+
+                    btn.innerText = 'Created!';
+                    fetchActiveSessions();
+
+                } catch (e) {
+                    console.error(e);
+                    alert('Failed to create session');
+                    btn.disabled = false;
+                    btn.innerText = 'Create Session';
+                }
+            }
+
+            function revealVotes() {
+                document.getElementById('reveal-modal').classList.remove('hidden');
+            }
+
+            function closeRevealModal() {
+                document.getElementById('reveal-modal').classList.add('hidden');
+            }
+
+            async function confirmRevealVotes() {
+                closeRevealModal();
+                const topicToReveal = selectedTopicId || currentTopicId;
+                if (!topicToReveal) return;
+                try {
+                    const res = await fetch(
+                        `/api/sessions/${currentSessionId}/topics/${topicToReveal}/reveal?code=${pmCode}`,
+                        { method: 'POST' }
+                    );
+                    if (!res.ok) alert('Not authorized to reveal votes.');
+                } catch (e) {
+                    console.error('Failed to reveal votes', e);
+                }
+            }
+
+            async function createNewTopic() {
+                const nameInput = document.getElementById('next-topic-name').value.trim();
+                if (!nameInput) return alert("Please enter a topic name!");
+
+                try {
+                    const res = await fetch(`/api/sessions/${currentSessionId}/topics?code=${pmCode}`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ name: nameInput })
+                    });
+                    if (res.ok) {
+                        document.getElementById('next-topic-name').value = '';
+                    } else {
+                        alert("Failed to create topic.");
+                    }
+                } catch (e) {
+                    console.error("Error creating topic", e);
+                }
+            }
+
+            async function submitVote(val, cardElement) {
+                myName = document.getElementById('voter-name').value.trim();
+                if (!myName) return alert('Please enter your name first!');
+                if (!selectedTopicId) return alert('No topic selected to vote on.');
+
+                document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
+                cardElement.classList.add('selected');
+                selectedVote = val;
+
+                const res = await fetch(`/api/sessions/${currentSessionId}/topics/${selectedTopicId}/vote`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username: myName, vote: val })
+                });
+
+                if (res.status === 409) {
+                    alert('This topic is already revealed and closed for voting.');
+                    cardElement.classList.remove('selected');
+                    selectedVote = null;
+                }
+            }
+
+            async function fetchSessionDetails() {
+                if (!currentSessionId) return;
+                try {
+                    const res = await fetch(`/api/sessions/${currentSessionId}`);
+                    if (res.status === 404) {
+                        alert('Session not found or expired.');
+                        window.location.href = window.location.pathname;
+                        return;
+                    }
+                    const data = await res.json();
+                    handleStreamUpdate(data);
+                } catch (e) {
+                    console.error('Error fetching session', e);
+                }
+            }
+
+            function renderResults(activeTopic) {
+                const tbody = document.getElementById('results-body');
+                tbody.innerHTML = '';
+
+                if (!activeTopic) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">No active topic.</td></tr>';
+                    return;
+                }
+
+                const votesMap = activeTopic.votes || {};
+                const isRevealed = activeTopic.revealed === true;
+
+                const voters = Object.keys(votesMap);
+                if (voters.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Waiting for votes...</td></tr>';
+                    return;
+                }
+
+                voters.forEach(name => {
+                    const voteData = votesMap[name];
+                    const tr = document.createElement('tr');
+
+                    const tdName = document.createElement('td');
+                    tdName.style.fontWeight = '600';
+                    tdName.innerText = name;
+
+                    const tdIp = document.createElement('td');
+                    tdIp.style.color = 'var(--text-muted)';
+                    tdIp.style.fontSize = '0.85rem';
+                    tdIp.style.fontFamily = 'monospace';
+                    tdIp.innerText = voteData.ipAddress || '';
+
+                    const tdVote = document.createElement('td');
+                    tdVote.style.textAlign = 'right';
+
+                    if (isRevealed || userRole === 'pm') {
+                        tdVote.innerHTML = `<span class="vote-badge">${voteData.voteValue}</span>`;
+                    } else {
+                        // Unrevealed: show own vote, hide others'
+                        tdVote.innerHTML = name === myName
+                            ? `<span class="vote-badge">${voteData.voteValue}</span>`
+                            : `<span class="vote-badge" style="background:var(--border);">?</span>`;
+                    }
+
+                    tr.appendChild(tdName);
+                    tr.appendChild(tdIp);
+                    tr.appendChild(tdVote);
+                    tbody.appendChild(tr);
+                });
+            }
+
+            function renderFiboCards() {
+                const container = document.getElementById('fibo-cards');
+                if (!container) return;
+                container.innerHTML = '';
+                FIBONACCI.forEach(val => {
+                    const div = document.createElement('div');
+                    div.className = 'vote-card';
+                    div.innerText = val;
+                    div.onclick = () => submitVote(val, div);
+                    container.appendChild(div);
+                });
+            }
+
+            function copyText(elementId, btnElement) {
+                const el = document.getElementById(elementId);
+                const text = el.querySelector('a') ? el.querySelector('a').href : el.innerText;
+                navigator.clipboard.writeText(text).then(() => {
+                    const originalText = btnElement.innerText;
+                    const originalBg = btnElement.style.backgroundColor;
+                    const originalColor = btnElement.style.color;
+
+                    btnElement.innerText = 'Copied!';
+                    btnElement.style.backgroundColor = 'var(--success)';
+                    btnElement.style.color = '#fff';
+
+                    setTimeout(() => {
+                        btnElement.innerText = originalText;
+                        btnElement.style.backgroundColor = originalBg;
+                        btnElement.style.color = originalColor;
+                    }, 2000);
+                });
+            }
