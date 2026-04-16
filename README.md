@@ -7,7 +7,7 @@ A modern, real-time Agile Poker (Planning Poker) estimation tool built with Spri
 The application follows a lightweight, real-time event-driven architecture designed for low latency and high scalability in ephemeral sessions.
 
 ```mermaid
-graph TD
+graph LR
     subgraph Client ["Browser Clients (Voters & PMs)"]
         UI["Vanilla HTML/CSS/JS"]
         ES["EventSource (SSE)"]
@@ -29,7 +29,7 @@ graph TD
     PC --> PSS
     PSS -- "Update State" --> SM
     PSS -- "Broadcast" --> EM
-    EM -- "Push Updates" --> ES
+    EM -. "Push Updates" .-> ES
     SH -- "Cleanup Expired" --> SM
 ```
 
