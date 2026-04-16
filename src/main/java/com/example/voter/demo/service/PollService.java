@@ -57,18 +57,21 @@ public class PollService {
         Poll poll = polls.get(pollId);
         if (poll != null) {
             poll.addVote(username, voteValue, ipAddress);
-            notifySubscribers(pollId, poll.getVotes());
+            broadcastPollState(pollId);
         }
         return poll;
     }
 
-    private void notifySubscribers(String pollId, Map<String, com.example.voter.demo.model.Vote> votes) {
+    public void broadcastPollState(String pollId) {
+        Poll poll = polls.get(pollId);
+        if (poll == null) return;
+
         List<SseEmitter> pollEmitters = emitters.get(pollId);
         if (pollEmitters != null) {
             List<SseEmitter> deadEmitters = new ArrayList<>();
             pollEmitters.forEach(emitter -> {
                 try {
-                    emitter.send(SseEmitter.event().data(votes));
+                    emitter.send(SseEmitter.event().data(poll));
                 } catch (Exception e) {
                     deadEmitters.add(emitter);
                 }

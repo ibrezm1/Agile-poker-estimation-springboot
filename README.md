@@ -57,6 +57,15 @@ Delete polls that are older than a specific number of hours.
 - **Parameters**: `hours` (optional query parameter, default is `1`). For example, `DELETE /api/polls?hours=2` will delete all polls created more than 2 hours ago.
 - **Response**: HTTP 204 No Content.
 
+## Real-Time Updates (Server-Sent Events)
+
+This application uses **Server-Sent Events (SSE)** instead of WebSockets to stream live voting updates from the server to connected clients in real-time.
+
+- **Backend Context**: Implemented using Spring's `SseEmitter`. You can find the real-time logic in the following files:
+    - `src/main/java/com/example/voter/demo/controller/PollController.java` (`streamPoll` endpoint)
+    - `src/main/java/com/example/voter/demo/service/PollService.java` (Managing the `ConcurrentHashMap` of active `SseEmitters`)
+- **Frontend Context**: The client-side connection is established using the native browser `EventSource` API, which listens for the published vote payload data in `src/main/resources/static/poker.html`.
+
 ## Memory and Cleanup
 
 - **Storage**: All data is stored in memory using `ConcurrentHashMap`. Data will be lost when the application stops.

@@ -89,6 +89,22 @@ public class PollController {
         return ResponseEntity.ok(poll);
     }
 
+    @PostMapping("/{id}/reveal")
+    public ResponseEntity<Void> revealPoll(@PathVariable String id, @RequestParam String code) {
+        Poll poll = pollService.getPoll(id);
+        if (poll == null) {
+            return ResponseEntity.notFound().build();
+        }
+        if (poll.getPmCode() == null || !poll.getPmCode().equals(code)) {
+            return ResponseEntity.status(org.springframework.http.HttpStatus.FORBIDDEN).build();
+        }
+        
+        poll.setRevealed(true);
+        pollService.broadcastPollState(id);
+        
+        return ResponseEntity.ok().build();
+    }
+
     @DeleteMapping
     public ResponseEntity<Void> deletePollsOlderThan(
             @RequestParam(value = "hours", defaultValue = "1") long hours) {

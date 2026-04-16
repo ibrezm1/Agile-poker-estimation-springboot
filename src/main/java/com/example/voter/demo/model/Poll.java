@@ -11,6 +11,7 @@ public class Poll {
     private Instant createdAt;
     private Map<String, Vote> votes;
     private String pmCode;
+    private boolean revealed = false;
 
     public Poll(String id, String name, String creatorIp) {
         this.id = id;
@@ -18,7 +19,15 @@ public class Poll {
         this.creatorIp = creatorIp;
         this.createdAt = Instant.now();
         this.votes = new ConcurrentHashMap<>();
-        this.pmCode = String.format("%02d", new java.util.Random().nextInt(100));
+        this.pmCode = String.format("%03d", new java.util.Random().nextInt(1000));
+    }
+
+    public boolean isRevealed() {
+        return revealed;
+    }
+
+    public void setRevealed(boolean revealed) {
+        this.revealed = revealed;
     }
 
     public String getId() {
