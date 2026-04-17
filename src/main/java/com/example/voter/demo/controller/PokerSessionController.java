@@ -37,7 +37,8 @@ public class PokerSessionController {
     }
 
     @PostMapping
-    public ResponseEntity<Map<String, Object>> createSession(@RequestBody CreateSessionRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<Map<String, Object>> createSession(@RequestBody CreateSessionRequest request,
+            HttpServletRequest httpRequest) {
         String name = request.name != null ? request.name : "Unnamed Session";
         String ip = httpRequest.getRemoteAddr();
         PokerSession session = sessionService.createSession(name, ip);
@@ -74,7 +75,8 @@ public class PokerSessionController {
     }
 
     @GetMapping(value = "/{id}/stream", produces = MediaType.TEXT_EVENT_STREAM_VALUE)
-    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> streamSession(@PathVariable String id) {
+    public ResponseEntity<org.springframework.web.servlet.mvc.method.annotation.SseEmitter> streamSession(
+            @PathVariable String id) {
         PokerSession session = sessionService.getSession(id);
         if (session == null) {
             return ResponseEntity.notFound().build();
@@ -83,7 +85,8 @@ public class PokerSessionController {
     }
 
     @PostMapping("/{id}/vote")
-    public ResponseEntity<PokerSession> vote(@PathVariable String id, @RequestBody VoteRequest request, HttpServletRequest httpRequest) {
+    public ResponseEntity<PokerSession> vote(@PathVariable String id, @RequestBody VoteRequest request,
+            HttpServletRequest httpRequest) {
         if (request.username == null || request.vote == null) {
             return ResponseEntity.badRequest().build();
         }
@@ -182,7 +185,8 @@ public class PokerSessionController {
     }
 
     @PostMapping("/{id}/topics")
-    public ResponseEntity<Topic> createTopic(@PathVariable String id, @RequestParam String code, @RequestBody CreateTopicRequest request) {
+    public ResponseEntity<Topic> createTopic(@PathVariable String id, @RequestParam String code,
+            @RequestBody CreateTopicRequest request) {
         PokerSession session = sessionService.getSession(id);
         if (session == null) {
             return ResponseEntity.notFound().build();
@@ -190,7 +194,7 @@ public class PokerSessionController {
         if (session.getPmCode() == null || !session.getPmCode().equals(code)) {
             return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
         }
-        
+
         Topic topic = session.createNewTopic(request.name);
         sessionService.broadcastSessionState(id);
         return ResponseEntity.ok(topic);

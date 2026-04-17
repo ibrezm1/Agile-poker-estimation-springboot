@@ -214,6 +214,9 @@
                         }
                     };
                     pollNameInput.addEventListener('input', updateBtn);
+                    pollNameInput.addEventListener('keyup', (e) => {
+                        if (e.key === 'Enter') createSession();
+                    });
                     updateBtn(); // Initial check
                 }
 
@@ -228,6 +231,9 @@
                         }
                     };
                     nextTopicInput.addEventListener('input', updateNextBtn);
+                    nextTopicInput.addEventListener('keyup', (e) => {
+                        if (e.key === 'Enter') createNewTopic();
+                    });
                     updateNextBtn();
                 }
             };
@@ -241,6 +247,9 @@
                     selectedTopicId = currentTopicId;
                 } else if (lastActiveTopicId && lastActiveTopicId !== currentTopicId && currentTopicId) {
                     selectedTopicId = currentTopicId;
+                    // Reset selection for the new topic
+                    selectedVote = null;
+                    document.querySelectorAll('.vote-card').forEach(c => c.classList.remove('selected'));
                 }
                 lastActiveTopicId = currentTopicId;
 
@@ -251,7 +260,7 @@
 
                 // Update session name header
                 const sessionTitle = document.getElementById('session-name-title');
-                if (sessionTitle) sessionTitle.innerText = sessionData.name + (userRole === 'pm' ? ' (PM)' : '');
+                if (sessionTitle) sessionTitle.innerText = sessionData.name + (userRole === 'pm' ? '  (Session)' : '');
 
                 // Update creation and expiration time
                 if (sessionData.createdAt) {
@@ -375,8 +384,9 @@
                         const chips = Object.entries(votes).map(([name, vd]) => {
                             const ip = vd.ipAddress || '';
                             const title = ip ? `IP: ${ip}` : '';
+                            const displayName = name === myName ? `${name} (you)` : name;
                             return `<span class="vote-chip" title="${title}">
-                                <span>${name}</span>
+                                <span>${displayName}</span>
                                 <span class="chip-val">${vd.voteValue}</span>
                             </span>`;
                         }).join('');
@@ -643,7 +653,8 @@
 
                     const tdName = document.createElement('td');
                     tdName.style.fontWeight = '600';
-                    tdName.innerText = name;
+                    const displayName = (name === myName && userRole !== 'pm') ? `${name} (you)` : name;
+                    tdName.innerText = displayName;
 
                     const tdIp = document.createElement('td');
                     tdIp.style.color = 'var(--text-muted)';

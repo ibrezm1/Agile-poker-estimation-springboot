@@ -26,7 +26,7 @@ class PokerSessionTest {
         PokerSession session = new PokerSession("S1", "ip");
         Topic t2 = session.createNewTopic("Topic 2");
         
-        assertEquals(2, session.getTopics().size());
+        assertEquals(1, session.getTopics().size());
         assertEquals("Topic 2", t2.getName());
         assertEquals(t2.getId(), session.getActiveTopicId());
     }
@@ -41,5 +41,24 @@ class PokerSessionTest {
         Topic t = session.createNewTopic("First Topic");
         assertNotNull(session.getActiveTopic());
         assertEquals("First Topic", session.getActiveTopic().getName());
+    }
+
+    @Test
+    void testTopicLimitEnforcement() {
+        PokerSession session = new PokerSession("Limit Test", "ip");
+        
+        // Add 20 topics
+        for (int i = 1; i <= 20; i++) {
+            session.createNewTopic("Topic " + i);
+        }
+        assertEquals(20, session.getTopics().size());
+        assertEquals("Topic 1", session.getTopics().get(0).getName());
+
+        // Add 21st topic
+        session.createNewTopic("Topic 21");
+        
+        assertEquals(20, session.getTopics().size());
+        assertEquals("Topic 2", session.getTopics().get(0).getName(), "Oldest topic should have been evicted");
+        assertEquals("Topic 21", session.getTopics().get(19).getName());
     }
 }

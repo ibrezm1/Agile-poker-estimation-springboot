@@ -104,3 +104,10 @@ The PM view is protected by a 3-digit access code generated at session creation.
 - Create new topics dynamically.
 - Reveal votes (closing the topic).
 - View all participants' IP addresses and real-time voting status.
+
+---
+
+## 📅 Future Improvements
+- [ ] **Rate Limiting**: Integrate **Resilience4j** to limit the `POST /api/sessions` (Create Session) endpoint to 3–4 requests per minute per IP for enhanced DDoS protection.
+- [ ] **Data Persistence**: Add an optional Mongo/Postgres/Redis layer for distributed deployments.
+- [ ] **Security & LDAP**: Integrate `spring-boot-starter-security` and `spring-boot-starter-data-ldap` for corporate identity management and session protection.

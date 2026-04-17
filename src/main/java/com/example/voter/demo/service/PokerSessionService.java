@@ -18,12 +18,34 @@ public class PokerSessionService {
     private final Map<String, PokerSession> sessions = new ConcurrentHashMap<>();
     // CopyOnWriteArrayList is thread-safe: safe to iterate while other threads add/remove
     private final Map<String, List<SseEmitter>> emitters = new ConcurrentHashMap<>();
+    private static final int MAX_SESSIONS = 50;
 
     public PokerSession createSession(String name, String creatorIp) {
+        if (sessions.size() >= MAX_SESSIONS) {
+            evictOldestSession();
+        }
         PokerSession session = new PokerSession(name, creatorIp);
         sessions.put(session.getId(), session);
         emitters.put(session.getId(), new CopyOnWriteArrayList<>());
         return session;
+    }
+
+    private void evictOldestSession() {
+        PokerSession oldest = null;
+        for (PokerSession s : sessions.values()) {
+            if (oldest == null || s.getCreatedAt().isBefore(oldest.getCreatedAt())) {
+                oldest = s;
+            }
+        }
+
+        if (oldest != null) {
+            String sessionId = oldest.getId();
+            sessions.remove(sessionId);
+            List<SseEmitter> sessionEmitters = emitters.remove(sessionId);
+            if (sessionEmitters != null) {
+                sessionEmitters.forEach(SseEmitter::complete);
+            }
+        }
     }
 
     public PokerSession getSession(String id) {

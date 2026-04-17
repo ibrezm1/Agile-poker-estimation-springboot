@@ -12,7 +12,7 @@ public class PokerSession {
     private String creatorIp;
     private Instant createdAt;
     private String pmCode;
-    
+
     private List<Topic> topics;
     private String activeTopicId;
 
@@ -87,7 +87,8 @@ public class PokerSession {
 
     @JsonIgnore
     public Topic getActiveTopic() {
-        if (topics == null || activeTopicId == null) return null;
+        if (topics == null || activeTopicId == null)
+            return null;
         for (Topic t : topics) {
             if (activeTopicId.equals(t.getId())) {
                 return t;
@@ -96,7 +97,12 @@ public class PokerSession {
         return null;
     }
 
+    private static final int MAX_TOPICS = 20;
+
     public Topic createNewTopic(String topicName) {
+        if (topics.size() >= MAX_TOPICS) {
+            topics.remove(0); // Evict oldest topic
+        }
         Topic newTopic = new Topic(topicName);
         this.topics.add(newTopic);
         this.activeTopicId = newTopic.getId();
